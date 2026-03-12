@@ -1,0 +1,8 @@
+{
+  "id": "clawwork",
+  "name": "ClawWork Desktop Channel",
+  "version": "0.1.0",
+  "description": "OpenClaw channel plugin for ClawWork desktop client",
+  "author": "samzong",
+  "license": "MIT"
+}

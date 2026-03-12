@@ -1,0 +1,22 @@
+{
+  "name": "openclaw-channel-clawwork",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "OpenClaw channel plugin for ClawWork desktop client",
+  "main": "./src/index.ts",
+  "openclaw": {
+    "extensions": ["./src/index.ts"]
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@clawwork/shared": "workspace:*",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.0",
+    "typescript": "^5.7.0"
+  }
+}
