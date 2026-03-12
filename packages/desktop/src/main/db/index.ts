@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { join } from 'path';
 import { DB_FILE_NAME } from '@clawwork/shared';
 import * as schema from './schema.js';
+import { initFTS } from './fts.js';
 
 let db: ReturnType<typeof drizzle> | null = null;
 let sqlite: Database.Database | null = null;
@@ -50,6 +51,7 @@ export function initDatabase(workspacePath: string): void {
   sqlite = new Database(dbPath);
   sqlite.pragma('journal_mode = WAL');
   sqlite.exec(CREATE_TABLES_SQL);
+  initFTS(sqlite);
 
   db = drizzle(sqlite, { schema });
   console.log(`[db] initialized at ${dbPath}`);
@@ -58,6 +60,10 @@ export function initDatabase(workspacePath: string): void {
 export function getDb(): ReturnType<typeof drizzle> {
   if (!db) throw new Error('Database not initialized. Call initDatabase() first.');
   return db;
+}
+
+export function getSqlite(): Database.Database | null {
+  return sqlite;
 }
 
 export function closeDatabase(): void {

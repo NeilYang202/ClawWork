@@ -34,9 +34,17 @@ export class GatewayClient {
 
   constructor(
     private readonly token: string,
-    private readonly host = '127.0.0.1',
-    private readonly port = GATEWAY_WS_PORT,
+    private host = '127.0.0.1',
+    private port = GATEWAY_WS_PORT,
   ) {}
+
+  /** Update server URL and reconnect */
+  updateUrl(host: string, port: number): void {
+    this.host = host;
+    this.port = port;
+    this.reconnectAttempts = 0;
+    this.connect();
+  }
 
   setMainWindow(win: BrowserWindow): void {
     this.mainWindow = win;

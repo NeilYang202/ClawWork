@@ -6,7 +6,9 @@ import { initWebSockets, destroyWebSockets } from './ws/index.js';
 import { registerWsHandlers } from './ipc/ws-handlers.js';
 import { registerArtifactHandlers } from './ipc/artifact-handlers.js';
 import { registerWorkspaceHandlers } from './ipc/workspace-handlers.js';
-import { getWorkspacePath } from './workspace/config.js';
+import { registerSettingsHandlers } from './ipc/settings-handlers.js';
+import { registerSearchHandlers } from './ipc/search-handlers.js';
+import { getWorkspacePath, readConfig } from './workspace/config.js';
 import { initDatabase, closeDatabase } from './db/index.js';
 
 const SCREENSHOT_PATH = '/tmp/clawwork-screenshot.png';
@@ -44,7 +46,7 @@ function createWindow(): BrowserWindow {
     show: false,
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 16, y: 16 },
-    backgroundColor: '#1C1C1C',
+    backgroundColor: readConfig()?.theme === 'light' ? '#FAFAFA' : '#1C1C1C',
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false,
@@ -79,6 +81,8 @@ app.whenReady().then(() => {
   registerWsHandlers();
   registerArtifactHandlers();
   registerWorkspaceHandlers();
+  registerSettingsHandlers();
+  registerSearchHandlers();
 
   const wsPath = getWorkspacePath();
   if (wsPath) {

@@ -54,6 +54,14 @@ function buildApi(): ClawWorkAPI {
     setupWorkspace: (path: string) =>
       ipcRenderer.invoke('workspace:setup', path),
 
+    getSettings: () =>
+      ipcRenderer.invoke('settings:get'),
+    updateSettings: (partial: Record<string, unknown>) =>
+      ipcRenderer.invoke('settings:update', partial),
+
+    globalSearch: (query: string) =>
+      ipcRenderer.invoke('search:global', query),
+
     removeAllListeners: (channel: string) => {
       ipcRenderer.removeAllListeners(channel);
     },

@@ -1,0 +1,11 @@
+appId: com.clawwork.app
+productName: ClawWork
+directories:
+  buildResources: build
+  output: dist
+mac:
+  target: dmg
+  identity: null
+  artifactName: ${productName}-${version}-${arch}.${ext}
+dmg:
+  writeUpdateInfo: false

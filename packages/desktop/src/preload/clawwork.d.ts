@@ -17,6 +17,26 @@ interface GatewayEvent {
   seq?: number;
 }
 
+interface AppSettings {
+  workspacePath: string;
+  theme?: 'dark' | 'light';
+  gatewayUrl?: string;
+}
+
+interface SearchResult {
+  type: 'task' | 'message' | 'artifact';
+  id: string;
+  title: string;
+  snippet: string;
+  taskId?: string;
+}
+
+interface SearchResponse {
+  ok: boolean;
+  results?: SearchResult[];
+  error?: string;
+}
+
 export interface ClawWorkAPI {
   sendMessage: (sessionKey: string, content: string) => Promise<IpcResult>;
   chatHistory: (sessionKey: string, limit?: number) => Promise<IpcResult>;
@@ -46,6 +66,11 @@ export interface ClawWorkAPI {
   getDefaultWorkspacePath: () => Promise<string>;
   browseWorkspace: () => Promise<string | null>;
   setupWorkspace: (path: string) => Promise<IpcResult>;
+
+  getSettings: () => Promise<AppSettings | null>;
+  updateSettings: (partial: Partial<AppSettings>) => Promise<{ ok: boolean; config: AppSettings }>;
+
+  globalSearch: (query: string) => Promise<SearchResponse>;
 }
 
 declare global {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Toaster } from 'sonner'
 import LeftNav from './layouts/LeftNav'
 import MainArea from './layouts/MainArea'
 import RightPanel from './layouts/RightPanel'
@@ -7,6 +8,7 @@ import Setup from './layouts/Setup'
 import Settings from './layouts/Settings'
 import { useUiStore } from './stores/uiStore'
 import { useGatewayEventDispatcher } from './hooks/useGatewayDispatcher'
+import { useTheme } from './hooks/useTheme'
 import { cn } from '@/lib/utils'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
@@ -19,8 +21,10 @@ export default function App() {
   const setRightPanelOpen = useUiStore((s) => s.setRightPanelOpen)
   const settingsOpen = useUiStore((s) => s.settingsOpen)
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen)
+  const theme = useUiStore((s) => s.theme)
 
   useGatewayEventDispatcher()
+  useTheme()
 
   useEffect(() => {
     window.clawwork.isWorkspaceConfigured().then((configured) => {
@@ -36,6 +40,17 @@ export default function App() {
     return (
       <TooltipProvider>
         <Setup onSetupComplete={() => { setNeedsSetup(false); setReady(true) }} />
+        <Toaster
+          theme={theme}
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-primary)',
+            },
+          }}
+        />
       </TooltipProvider>
     )
   }
@@ -79,6 +94,17 @@ export default function App() {
             </motion.aside>
           )}
         </AnimatePresence>
+        <Toaster
+          theme={theme}
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-primary)',
+            },
+          }}
+        />
       </div>
     </TooltipProvider>
   )

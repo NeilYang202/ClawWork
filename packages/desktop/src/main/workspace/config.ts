@@ -4,8 +4,10 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { homedir } from 'os';
 import { CONFIG_FILE_NAME, DEFAULT_WORKSPACE_DIR } from '@clawwork/shared';
 
-interface AppConfig {
+export interface AppConfig {
   workspacePath: string;
+  theme?: 'dark' | 'light';
+  gatewayUrl?: string;
 }
 
 function configFilePath(): string {
@@ -30,6 +32,13 @@ export function readConfig(): AppConfig | null {
 export function writeConfig(config: AppConfig): void {
   const cfgPath = configFilePath();
   writeFileSync(cfgPath, JSON.stringify(config, null, 2), 'utf-8');
+}
+
+export function updateConfig(partial: Partial<AppConfig>): AppConfig {
+  const current = readConfig() ?? { workspacePath: getDefaultWorkspacePath() };
+  const merged = { ...current, ...partial };
+  writeConfig(merged);
+  return merged;
 }
 
 export function getWorkspacePath(): string | null {

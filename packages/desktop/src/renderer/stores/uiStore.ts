@@ -2,6 +2,10 @@ import { create } from 'zustand';
 
 type MainView = 'chat' | 'files';
 
+type Theme = 'dark' | 'light';
+
+type GatewayConnectionStatus = 'connected' | 'connecting' | 'disconnected';
+
 interface UiState {
   rightPanelOpen: boolean;
   toggleRightPanel: () => void;
@@ -12,6 +16,12 @@ interface UiState {
 
   settingsOpen: boolean;
   setSettingsOpen: (open: boolean) => void;
+
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+
+  gatewayStatus: GatewayConnectionStatus;
+  setGatewayStatus: (status: GatewayConnectionStatus) => void;
 
   /** taskIds with unread messages (background tasks that received new content) */
   unreadTaskIds: Set<string>;
@@ -29,6 +39,12 @@ export const useUiStore = create<UiState>((set) => ({
 
   settingsOpen: false,
   setSettingsOpen: (open) => set({ settingsOpen: open }),
+
+  theme: 'dark',
+  setTheme: (theme) => set({ theme }),
+
+  gatewayStatus: 'connecting',
+  setGatewayStatus: (status) => set({ gatewayStatus: status }),
 
   unreadTaskIds: new Set(),
   markUnread: (taskId) =>

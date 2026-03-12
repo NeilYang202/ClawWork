@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { parseTaskIdFromSessionKey } from '@clawwork/shared';
+import { toast } from 'sonner';
 import { useMessageStore } from '../stores/messageStore';
 import { useTaskStore } from '../stores/taskStore';
 import { useUiStore } from '../stores/uiStore';
@@ -76,6 +77,27 @@ export function useGatewayEventDispatcher(): void {
       window.clawwork.removeAllListeners('gateway-event');
     };
   }, [activeTaskId, addMessage, appendStreamDelta, finalizeStream, markUnread, updateTaskTitle]);
+
+  const wasConnectedRef = useRef(true);
+  useEffect(() => {
+    const setGwStatus = useUiStore.getState().setGatewayStatus;
+    window.clawwork.gatewayStatus().then((s) => {
+      const status = s.connected ? 'connected' as const : 'disconnected' as const;
+      setGwStatus(status);
+      wasConnectedRef.current = s.connected;
+    });
+    window.clawwork.onGatewayStatus((s) => {
+      const next = s.connected ? 'connected' as const : s.error ? 'disconnected' as const : 'connecting' as const;
+      setGwStatus(next);
+      if (s.connected && !wasConnectedRef.current) {
+        toast.success('Gateway reconnected');
+      } else if (!s.connected && wasConnectedRef.current) {
+        toast.warning('Gateway disconnected', { description: 'Attempting to reconnect...' });
+      }
+      wasConnectedRef.current = s.connected;
+    });
+    return () => { window.clawwork.removeAllListeners('gateway-status'); };
+  }, []);
 }
 
 function extractText(payload: ChatEventPayload): string {

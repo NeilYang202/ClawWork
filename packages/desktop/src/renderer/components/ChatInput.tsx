@@ -1,6 +1,7 @@
 import { useRef, useCallback, type KeyboardEvent } from 'react';
 import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { motion as motionPresets } from '@/styles/design-tokens';
 import { Button } from '@/components/ui/button';
@@ -36,7 +37,9 @@ export default function ChatInput() {
     try {
       await window.clawwork.sendMessage(activeTask.sessionKey, content);
     } catch (err) {
-      addMessage(activeTask.id, 'system', `\u53D1\u9001\u5931\u8D25: ${String(err)}`);
+      const msg = err instanceof Error ? err.message : String(err);
+      addMessage(activeTask.id, 'system', `\u53D1\u9001\u5931\u8D25: ${msg}`);
+      toast.error('Failed to send message', { description: msg });
     }
   }, [activeTask, addMessage, updateTaskTitle]);
 
