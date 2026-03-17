@@ -72,6 +72,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       onClick={() => onChange(!checked)}
       className={cn(
         'relative inline-flex w-10 h-[22px] rounded-full transition-colors flex-shrink-0 cursor-pointer',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-accent)]',
         checked ? 'bg-[var(--accent)]' : 'bg-[var(--bg-tertiary)] border border-[var(--border)]',
       )}
     >
@@ -599,6 +600,7 @@ export default function Settings({ onClose }: SettingsProps) {
                           'w-[140px] text-center text-sm font-mono px-2.5 py-1 rounded-md',
                           'bg-[var(--accent-soft)] border border-[var(--accent)]/40',
                           'text-[var(--accent)] outline-none animate-pulse',
+                          'focus:ring-2 focus:ring-[var(--ring-accent)]',
                         )}
                       />
                     ) : (

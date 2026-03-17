@@ -1,13 +1,15 @@
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function ThinkingIndicator() {
+  const reduced = useReducedMotion();
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 4 }}
+      initial={{ opacity: 0, y: reduced ? 0 : 4 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 4 }}
+      exit={{ opacity: 0, y: reduced ? 0 : 4 }}
       transition={{ duration: 0.15 }}
       className="flex gap-3.5 py-4"
     >
@@ -21,7 +23,7 @@ export default function ThinkingIndicator() {
           <motion.span
             key={i}
             className="w-2 h-2 rounded-full bg-[var(--text-muted)]"
-            animate={{ opacity: [0.3, 1, 0.3], scale: [0.85, 1, 0.85] }}
+            animate={reduced ? { opacity: [0.3, 1, 0.3] } : { opacity: [0.3, 1, 0.3], scale: [0.85, 1, 0.85] }}
             transition={{
               duration: 1.2,
               repeat: Infinity,

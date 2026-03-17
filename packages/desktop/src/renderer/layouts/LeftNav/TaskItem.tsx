@@ -1,5 +1,5 @@
 import { type MouseEvent } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { MessageSquare, Circle, Loader2, Server, Cpu, Bot } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -21,6 +21,7 @@ interface TaskItemProps {
 
 export default function TaskItem({ task, active, onContextMenu }: TaskItemProps) {
   const { t } = useTranslation();
+  const reduced = useReducedMotion();
   const setActiveTask = useTaskStore((s) => s.setActiveTask);
   const clearUnread = useUiStore((s) => s.clearUnread);
   const hasUnread = useUiStore((s) => s.unreadTaskIds.has(task.id));
@@ -45,7 +46,7 @@ export default function TaskItem({ task, active, onContextMenu }: TaskItemProps)
   return (
     <motion.button
       {...motionPresets.listItem}
-      whileHover={{ x: 2 }}
+      whileHover={reduced ? undefined : { x: 2 }}
       transition={{ duration: 0.15, ease: 'easeOut' }}
       onClick={handleClick}
       onContextMenu={onContextMenu}

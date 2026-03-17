@@ -11,7 +11,7 @@ function RiskBadge({ security }: { security?: string | null }) {
     return (
       <span
         className="rounded px-1.5 py-0.5 text-xs font-medium"
-        style={{ background: 'color-mix(in srgb, #ef4444 15%, var(--bg-elevated))', color: '#ef4444' }}
+        style={{ background: 'var(--danger-bg)', color: 'var(--danger)' }}
       >
         {t('approval.riskHigh')}
       </span>
@@ -42,7 +42,7 @@ function Countdown({ expiresAtMs }: { expiresAtMs: number }) {
   }, [expiresAtMs]);
 
   const pct = Math.min(100, (remaining / 120) * 100);
-  const color = remaining > 60 ? 'var(--accent)' : remaining > 20 ? '#f59e0b' : '#ef4444';
+  const color = remaining > 60 ? 'var(--accent)' : remaining > 20 ? 'var(--warning)' : 'var(--danger)';
 
   return (
     <div className="space-y-1">
@@ -78,7 +78,7 @@ export default function ApprovalDialog() {
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5" style={{ color: '#f59e0b' }} />
+            <ShieldAlert className="h-5 w-5" style={{ color: 'var(--warning)' }} />
             {t('approval.title')}
             <RiskBadge security={request.security} />
           </DialogTitle>
@@ -141,7 +141,7 @@ export default function ApprovalDialog() {
             </Button>
             <Button
               onClick={() => resolveApproval(id, 'allow-once')}
-              style={{ background: 'var(--accent)', color: '#000' }}
+              style={{ background: 'var(--accent)', color: 'var(--bg-primary)' }}
             >
               {t('approval.allowOnce')}
             </Button>

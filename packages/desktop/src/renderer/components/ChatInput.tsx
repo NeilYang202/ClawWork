@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, useEffect, useMemo, type KeyboardEvent, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Send,
   Square,
@@ -113,6 +113,7 @@ const THINKING_LABEL_KEYS: Record<ThinkingLevel, string> = {
 
 export default function ChatInput() {
   const { t } = useTranslation();
+  const reduced = useReducedMotion();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
@@ -1065,8 +1066,8 @@ export default function ChatInput() {
 
             {/* Attach button */}
             <motion.div
-              whileHover={motionPresets.scale.whileHover}
-              whileTap={motionPresets.scale.whileTap}
+              whileHover={reduced ? undefined : motionPresets.scale.whileHover}
+              whileTap={reduced ? undefined : motionPresets.scale.whileTap}
               transition={motionPresets.scale.transition}
             >
               <Button
@@ -1210,8 +1211,8 @@ export default function ChatInput() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ duration: 0.15 }}
-                  whileHover={motionPresets.scale.whileHover}
-                  whileTap={motionPresets.scale.whileTap}
+                  whileHover={reduced ? undefined : motionPresets.scale.whileHover}
+                  whileTap={reduced ? undefined : motionPresets.scale.whileTap}
                 >
                   <Button variant="soft" size="icon" onClick={handleSend} disabled={disabled} className="rounded-xl">
                     <Send size={16} />
