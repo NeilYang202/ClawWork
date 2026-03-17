@@ -35,11 +35,7 @@ export default function SlashArgPicker({
     <AnimatePresence>
       {options.length > 0 && (
         <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={onClose}
-            aria-hidden
-          />
+          <div className="fixed inset-0 z-40" onClick={onClose} aria-hidden />
           <motion.div
             role="listbox"
             aria-label={`Options for /${commandName}`}
@@ -78,16 +74,20 @@ export default function SlashArgPicker({
                   }}
                 >
                   <span className="font-mono text-[13px] font-medium shrink-0">{opt.label}</span>
-                  {opt.detail && (
-                    <span className="ml-auto text-xs text-[var(--fg-muted)] truncate">{opt.detail}</span>
-                  )}
+                  {opt.detail && <span className="ml-auto text-xs text-[var(--fg-muted)] truncate">{opt.detail}</span>}
                 </li>
               ))}
             </ul>
             <div className="px-4 py-1.5 border-t border-[var(--border-subtle)] flex gap-3 text-[10px] text-[var(--fg-muted)]">
-              <span><kbd className="font-mono">↑↓</kbd> navigate</span>
-              <span><kbd className="font-mono">↵</kbd> select</span>
-              <span><kbd className="font-mono">Esc</kbd> close</span>
+              <span>
+                <kbd className="font-mono">↑↓</kbd> navigate
+              </span>
+              <span>
+                <kbd className="font-mono">↵</kbd> select
+              </span>
+              <span>
+                <kbd className="font-mono">Esc</kbd> close
+              </span>
             </div>
           </motion.div>
         </>

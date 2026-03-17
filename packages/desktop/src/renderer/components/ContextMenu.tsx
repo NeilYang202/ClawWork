@@ -34,13 +34,10 @@ export function useTaskContextMenu(
 ) {
   const [state, setState] = useState<MenuState>(INITIAL_STATE);
 
-  const openMenu = useCallback(
-    (e: MouseEvent, taskId: string, taskStatus: TaskStatus) => {
-      e.preventDefault();
-      setState({ isOpen: true, taskId, taskStatus });
-    },
-    [],
-  );
+  const openMenu = useCallback((e: MouseEvent, taskId: string, taskStatus: TaskStatus) => {
+    e.preventDefault();
+    setState({ isOpen: true, taskId, taskStatus });
+  }, []);
 
   const closeMenu = useCallback(() => {
     setState((s) => ({ ...s, isOpen: false }));

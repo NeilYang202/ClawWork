@@ -14,7 +14,11 @@ interface StreamingMessageProps {
   toolCalls?: ToolCall[];
 }
 
-const StreamingMessage = memo(function StreamingMessage({ content, thinkingContent, toolCalls }: StreamingMessageProps) {
+const StreamingMessage = memo(function StreamingMessage({
+  content,
+  thinkingContent,
+  toolCalls,
+}: StreamingMessageProps) {
   const { t } = useTranslation();
   const [thinkingOpen, setThinkingOpen] = useState(true);
 
@@ -25,10 +29,9 @@ const StreamingMessage = memo(function StreamingMessage({ content, thinkingConte
       transition={motionPresets.fadeIn.transition}
       className="flex gap-3.5 py-4"
     >
-      <div className={cn(
-        'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
-        'bg-[var(--accent-dim)]',
-      )}>
+      <div
+        className={cn('flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center', 'bg-[var(--accent-dim)]')}
+      >
         <Bot size={16} className="text-[var(--accent)]" />
       </div>
       <div className="min-w-0 max-w-[80%]">
@@ -44,10 +47,7 @@ const StreamingMessage = memo(function StreamingMessage({ content, thinkingConte
             >
               <Brain size={12} className="text-[var(--accent)] animate-pulse" />
               <span>{t('chatMessage.thinkingProcess')}</span>
-              <ChevronDown
-                size={11}
-                className={cn('transition-transform', thinkingOpen && 'rotate-180')}
-              />
+              <ChevronDown size={11} className={cn('transition-transform', thinkingOpen && 'rotate-180')} />
             </button>
             <AnimatePresence>
               {thinkingOpen && (
@@ -58,12 +58,14 @@ const StreamingMessage = memo(function StreamingMessage({ content, thinkingConte
                   transition={{ duration: 0.15 }}
                   className="overflow-hidden"
                 >
-                  <div className={cn(
-                    'mt-1.5 px-3 py-2 rounded-lg text-xs leading-relaxed',
-                    'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
-                    'border-l-2 border-[var(--accent)] border-opacity-30',
-                    'max-h-60 overflow-y-auto',
-                  )}>
+                  <div
+                    className={cn(
+                      'mt-1.5 px-3 py-2 rounded-lg text-xs leading-relaxed',
+                      'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
+                      'border-l-2 border-[var(--accent)] border-opacity-30',
+                      'max-h-60 overflow-y-auto',
+                    )}
+                  >
                     <MarkdownContent content={thinkingContent} showCursor={!content} />
                   </div>
                 </motion.div>

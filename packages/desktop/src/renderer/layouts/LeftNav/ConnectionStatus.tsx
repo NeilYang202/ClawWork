@@ -1,35 +1,35 @@
-import { motion, AnimatePresence } from 'framer-motion'
-import { useTranslation } from 'react-i18next'
-import { cn } from '@/lib/utils'
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
 
-type Status = 'connected' | 'connecting' | 'disconnected'
+type Status = 'connected' | 'connecting' | 'disconnected';
 
 interface StatusConfig {
-  color: string
-  labelKey: string
-  hintKey?: string
-  pulse?: boolean
+  color: string;
+  labelKey: string;
+  hintKey?: string;
+  pulse?: boolean;
 }
 
 interface ConnectionStatusProps {
-  gatewayStatus: Status
-  className?: string
+  gatewayStatus: Status;
+  className?: string;
 }
 
 function computeConfig(status: Status): StatusConfig {
   switch (status) {
     case 'connected':
-      return { color: 'bg-[var(--accent)]', labelKey: 'connection.connected' }
+      return { color: 'bg-[var(--accent)]', labelKey: 'connection.connected' };
     case 'connecting':
-      return { color: 'bg-[var(--warning)]', labelKey: 'connection.connecting', pulse: true }
+      return { color: 'bg-[var(--warning)]', labelKey: 'connection.connecting', pulse: true };
     case 'disconnected':
-      return { color: 'bg-[var(--danger)]', labelKey: 'connection.disconnected', hintKey: 'connection.gatewayDown' }
+      return { color: 'bg-[var(--danger)]', labelKey: 'connection.disconnected', hintKey: 'connection.gatewayDown' };
   }
 }
 
 export default function ConnectionStatus({ gatewayStatus, className }: ConnectionStatusProps) {
-  const { t } = useTranslation()
-  const cfg = computeConfig(gatewayStatus)
+  const { t } = useTranslation();
+  const cfg = computeConfig(gatewayStatus);
 
   return (
     <AnimatePresence mode="wait">
@@ -41,20 +41,12 @@ export default function ConnectionStatus({ gatewayStatus, className }: Connectio
         transition={{ duration: 0.15 }}
         className={cn('flex items-center gap-2 px-3 py-1.5 text-xs', className)}
       >
-        <span
-          className={cn(
-            'w-2 h-2 rounded-full flex-shrink-0',
-            cfg.color,
-            cfg.pulse && 'animate-pulse',
-          )}
-        />
+        <span className={cn('w-2 h-2 rounded-full flex-shrink-0', cfg.color, cfg.pulse && 'animate-pulse')} />
         <span className="text-[var(--text-muted)]">
           {t(cfg.labelKey)}
-          {cfg.hintKey && (
-            <span className="ml-1 text-[var(--text-muted)] opacity-60">({t(cfg.hintKey)})</span>
-          )}
+          {cfg.hintKey && <span className="ml-1 text-[var(--text-muted)] opacity-60">({t(cfg.hintKey)})</span>}
         </span>
       </motion.div>
     </AnimatePresence>
-  )
+  );
 }

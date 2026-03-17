@@ -17,7 +17,12 @@ interface MessageState {
   /** message ID to highlight (e.g. from file navigation) */
   highlightedMessageId: string | null;
 
-  addMessage: (taskId: string, role: MessageRole, content: string, imageAttachments?: MessageImageAttachment[]) => Message;
+  addMessage: (
+    taskId: string,
+    role: MessageRole,
+    content: string,
+    imageAttachments?: MessageImageAttachment[],
+  ) => Message;
   /** Insert or update a ToolCall on the latest assistant message for a task.
    *  If no assistant message exists yet, one is created to host the tool call. */
   upsertToolCall: (taskId: string, tc: ToolCall) => void;
@@ -37,7 +42,7 @@ function generateId(): string {
   return crypto.randomUUID();
 }
 
-export const useMessageStore = create<MessageState>((set, get) => ({
+export const useMessageStore = create<MessageState>((set, _get) => ({
   messagesByTask: {},
   streamingByTask: {},
   streamingThinkingByTask: {},
@@ -61,13 +66,15 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         [taskId]: [...(s.messagesByTask[taskId] ?? []), msg],
       },
     }));
-    window.clawwork.persistMessage({
-      id: msg.id,
-      taskId: msg.taskId,
-      role: msg.role,
-      content: msg.content,
-      timestamp: msg.timestamp,
-    }).catch(() => {});
+    window.clawwork
+      .persistMessage({
+        id: msg.id,
+        taskId: msg.taskId,
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp,
+      })
+      .catch(() => {});
     return msg;
   },
 
@@ -83,9 +90,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         if (lastAssistantIdx >= 0 && lastUserIdx >= 0) break;
       }
 
-      const targetIdx = (lastAssistantIdx >= 0 && lastAssistantIdx > lastUserIdx)
-        ? lastAssistantIdx
-        : -1;
+      const targetIdx = lastAssistantIdx >= 0 && lastAssistantIdx > lastUserIdx ? lastAssistantIdx : -1;
 
       const updatedMsgs = [...msgs];
       if (targetIdx >= 0) {
@@ -170,13 +175,15 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     });
     if (captured) {
       const msg = captured as Message;
-      window.clawwork.persistMessage({
-        id: msg.id,
-        taskId: msg.taskId,
-        role: msg.role,
-        content: msg.content,
-        timestamp: msg.timestamp,
-      }).catch(() => {});
+      window.clawwork
+        .persistMessage({
+          id: msg.id,
+          taskId: msg.taskId,
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.timestamp,
+        })
+        .catch(() => {});
     }
   },
 

@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "@fontsource-variable/inter";
-@import "@fontsource-variable/jetbrains-mono";
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
 
 /* ============================================================
    ClawWork Design System — Theme Variables
@@ -9,24 +9,24 @@
 
 @layer base {
   :root,
-  :root[data-theme="dark"] {
-    --bg-primary: #1C1C1C;
+  :root[data-theme='dark'] {
+    --bg-primary: #1c1c1c;
     --bg-secondary: #242424;
-    --bg-tertiary: #2A2A2A;
+    --bg-tertiary: #2a2a2a;
     --bg-hover: #333333;
-    --accent: #0FFD0D;
+    --accent: #0ffd0d;
     --accent-dim: rgba(15, 253, 13, 0.15);
-    --text-primary: #F3F4F4;
-    --text-secondary: #9CA3AF;
-    --text-muted: #6B7280;
+    --text-primary: #f3f4f4;
+    --text-secondary: #9ca3af;
+    --text-muted: #6b7280;
     --border: rgba(255, 255, 255, 0.08);
     --border-accent: rgba(15, 253, 93, 0.15);
     --scrollbar-thumb: #444444;
     --scrollbar-track: transparent;
-    --danger: #F87171;
+    --danger: #f87171;
     --danger-bg: rgba(239, 68, 68, 0.1);
-    --warning: #FBBF24;
-    --info: #60A5FA;
+    --warning: #fbbf24;
+    --info: #60a5fa;
     --shadow-color: rgba(0, 0, 0, 0.4);
     --radius: 6px;
 
@@ -42,24 +42,24 @@
     --border-subtle: rgba(255, 255, 255, 0.05);
   }
 
-  :root[data-theme="light"] {
-    --bg-primary: #FAFAFA;
-    --bg-secondary: #FFFFFF;
-    --bg-tertiary: #F3F4F6;
-    --bg-hover: #E5E7EB;
-    --accent: #0B8A0A;
+  :root[data-theme='light'] {
+    --bg-primary: #fafafa;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f3f4f6;
+    --bg-hover: #e5e7eb;
+    --accent: #0b8a0a;
     --accent-dim: rgba(11, 138, 10, 0.1);
     --text-primary: #111827;
-    --text-secondary: #6B7280;
-    --text-muted: #9CA3AF;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
     --border: rgba(0, 0, 0, 0.08);
     --border-accent: rgba(11, 138, 10, 0.15);
-    --scrollbar-thumb: #D1D5DB;
+    --scrollbar-thumb: #d1d5db;
     --scrollbar-track: transparent;
-    --danger: #EF4444;
+    --danger: #ef4444;
     --danger-bg: rgba(239, 68, 68, 0.08);
-    --warning: #F59E0B;
-    --info: #3B82F6;
+    --warning: #f59e0b;
+    --info: #3b82f6;
     --shadow-color: rgba(0, 0, 0, 0.1);
     --radius: 6px;
 
@@ -67,7 +67,7 @@
     --accent-hover: #098609;
     --accent-soft: rgba(11, 138, 10, 0.08);
     --accent-soft-hover: rgba(11, 138, 10, 0.16);
-    --bg-elevated: #FFFFFF;
+    --bg-elevated: #ffffff;
     --ring-accent: rgba(11, 138, 10, 0.3);
     --glow-accent: 0 0 20px rgba(11, 138, 10, 0.1);
     --shadow-elevated: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.05);
@@ -75,10 +75,17 @@
     --border-subtle: rgba(0, 0, 0, 0.04);
   }
 
-  html, body, #root {
+  html,
+  body,
+  #root {
     height: 100%;
     overflow: hidden;
-    font-family: 'Inter Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-family:
+      'Inter Variable',
+      -apple-system,
+      BlinkMacSystemFont,
+      system-ui,
+      sans-serif;
     font-size: 14px;
     line-height: 1.5;
     letter-spacing: -0.011em;
@@ -99,10 +106,19 @@
 }
 
 /* Scrollbar — native fallback for areas not using Radix ScrollArea */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--scrollbar-track); }
-::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
 
 /* ============================================================
    Markdown prose (assistant messages)
@@ -117,8 +133,12 @@
     margin: 0.4em 0;
   }
 
-  .prose-chat p:first-child { margin-top: 0; }
-  .prose-chat p:last-child { margin-bottom: 0; }
+  .prose-chat p:first-child {
+    margin-top: 0;
+  }
+  .prose-chat p:last-child {
+    margin-bottom: 0;
+  }
 
   .prose-chat code {
     font-family: 'JetBrains Mono Variable', 'SF Mono', 'Fira Code', monospace;
@@ -148,7 +168,9 @@
     padding-left: 1.5em;
   }
 
-  .prose-chat li { margin: 0.15em 0; }
+  .prose-chat li {
+    margin: 0.15em 0;
+  }
 
   .prose-chat a {
     color: var(--accent);
@@ -170,12 +192,26 @@
     font-weight: 600;
   }
 
-  .prose-chat h1 { font-size: 1.25em; }
-  .prose-chat h2 { font-size: 1.125em; }
-  .prose-chat h3 { font-size: 1.0625em; }
-  .prose-chat h4 { font-size: 1em; font-weight: 600; margin: 0.6em 0 0.3em; }
+  .prose-chat h1 {
+    font-size: 1.25em;
+  }
+  .prose-chat h2 {
+    font-size: 1.125em;
+  }
+  .prose-chat h3 {
+    font-size: 1.0625em;
+  }
+  .prose-chat h4 {
+    font-size: 1em;
+    font-weight: 600;
+    margin: 0.6em 0 0.3em;
+  }
   .prose-chat h5,
-  .prose-chat h6 { font-size: 0.9375em; font-weight: 600; margin: 0.5em 0 0.25em; }
+  .prose-chat h6 {
+    font-size: 0.9375em;
+    font-weight: 600;
+    margin: 0.5em 0 0.25em;
+  }
 
   .prose-chat table {
     border-collapse: collapse;
@@ -211,12 +247,12 @@
     text-decoration: line-through;
   }
 
-  .prose-chat input[type="checkbox"] {
+  .prose-chat input[type='checkbox'] {
     margin-right: 0.4em;
     accent-color: var(--accent);
   }
 
-  .prose-chat li:has(> input[type="checkbox"]) {
+  .prose-chat li:has(> input[type='checkbox']) {
     list-style: none;
     margin-left: -1.2em;
   }
@@ -248,8 +284,12 @@
    ============================================================ */
 
 @keyframes msg-highlight {
-  0% { background-color: var(--accent-dim); }
-  100% { background-color: transparent; }
+  0% {
+    background-color: var(--accent-dim);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
 .animate-highlight {

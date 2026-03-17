@@ -1,11 +1,7 @@
 import simpleGit from 'simple-git';
 import { basename } from 'path';
 
-export async function commitArtifact(
-  workspacePath: string,
-  localPath: string,
-  message?: string,
-): Promise<string> {
+export async function commitArtifact(workspacePath: string, localPath: string, message?: string): Promise<string> {
   const git = simpleGit(workspacePath);
 
   await git.add(localPath);

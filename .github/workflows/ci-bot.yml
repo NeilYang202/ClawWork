@@ -52,7 +52,7 @@ env:
     rebase
     cherry-pick
 
-  MAINTAINERS_PLUGINS: ""
+  MAINTAINERS_PLUGINS: ''
 
   REVIEWERS: |-
     samzong
@@ -62,7 +62,7 @@ env:
     samzong
     yankay
 
-  MAINTAINERS: ""
+  MAINTAINERS: ''
 
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   GH_REPOSITORY: ${{ github.repository }}
@@ -135,7 +135,7 @@ jobs:
         env:
           LOGIN: ${{ github.event.pull_request.user.login }}
           AUTHOR: ${{ github.event.pull_request.user.login }}
-          MESSAGE: ""
+          MESSAGE: ''
           ISSUE_NUMBER: ${{ github.event.pull_request.number }}
           AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}
           ISSUE_KIND: pr

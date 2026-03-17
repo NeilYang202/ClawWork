@@ -1,90 +1,91 @@
-import { useEffect, useMemo, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Search } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { useFileStore } from '@/stores/fileStore'
-import { useTaskStore } from '@/stores/taskStore'
-import { useMessageStore } from '@/stores/messageStore'
-import { useUiStore } from '@/stores/uiStore'
-import { cn } from '@/lib/utils'
-import { motion as motionPresets } from '@/styles/design-tokens'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import FileCard from '@/components/FileCard'
-import FilePreview from '@/components/FilePreview'
-import type { Artifact } from '@clawwork/shared'
+import { useEffect, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useFileStore } from '@/stores/fileStore';
+import { useTaskStore } from '@/stores/taskStore';
+import { useMessageStore } from '@/stores/messageStore';
+import { useUiStore } from '@/stores/uiStore';
+import { cn } from '@/lib/utils';
+import { motion as motionPresets } from '@/styles/design-tokens';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import FileCard from '@/components/FileCard';
+import FilePreview from '@/components/FilePreview';
+import type { Artifact } from '@clawwork/shared';
 
 function sortArtifacts(list: Artifact[], sortBy: 'date' | 'name' | 'type'): Artifact[] {
-  const sorted = [...list]
+  const sorted = [...list];
   switch (sortBy) {
     case 'date':
-      return sorted.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      return sorted.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     case 'name':
-      return sorted.sort((a, b) => a.name.localeCompare(b.name))
+      return sorted.sort((a, b) => a.name.localeCompare(b.name));
     case 'type':
-      return sorted.sort((a, b) => a.type.localeCompare(b.type))
+      return sorted.sort((a, b) => a.type.localeCompare(b.type));
   }
 }
 
 export default function FileBrowser() {
-  const { t } = useTranslation()
-  const artifacts = useFileStore((s) => s.artifacts)
-  const filterTaskId = useFileStore((s) => s.filterTaskId)
-  const sortBy = useFileStore((s) => s.sortBy)
-  const selectedId = useFileStore((s) => s.selectedArtifactId)
-  const searchQuery = useFileStore((s) => s.searchQuery)
-  const setArtifacts = useFileStore((s) => s.setArtifacts)
-  const setFilterTaskId = useFileStore((s) => s.setFilterTaskId)
-  const setSortBy = useFileStore((s) => s.setSortBy)
-  const setSelectedArtifact = useFileStore((s) => s.setSelectedArtifact)
-  const setSearchQuery = useFileStore((s) => s.setSearchQuery)
+  const { t } = useTranslation();
+  const artifacts = useFileStore((s) => s.artifacts);
+  const filterTaskId = useFileStore((s) => s.filterTaskId);
+  const sortBy = useFileStore((s) => s.sortBy);
+  const selectedId = useFileStore((s) => s.selectedArtifactId);
+  const searchQuery = useFileStore((s) => s.searchQuery);
+  const setArtifacts = useFileStore((s) => s.setArtifacts);
+  const setFilterTaskId = useFileStore((s) => s.setFilterTaskId);
+  const setSortBy = useFileStore((s) => s.setSortBy);
+  const setSelectedArtifact = useFileStore((s) => s.setSelectedArtifact);
+  const setSearchQuery = useFileStore((s) => s.setSearchQuery);
 
-  const tasks = useTaskStore((s) => s.tasks)
-  const setActiveTask = useTaskStore((s) => s.setActiveTask)
-  const setMainView = useUiStore((s) => s.setMainView)
-  const setHighlightedMessage = useMessageStore((s) => s.setHighlightedMessage)
+  const tasks = useTaskStore((s) => s.tasks);
+  const setActiveTask = useTaskStore((s) => s.setActiveTask);
+  const setMainView = useUiStore((s) => s.setMainView);
+  const setHighlightedMessage = useMessageStore((s) => s.setHighlightedMessage);
 
   useEffect(() => {
     window.clawwork.listArtifacts().then((res) => {
       if (res.ok && res.result) {
-        setArtifacts(res.result as unknown as Artifact[])
+        setArtifacts(res.result as unknown as Artifact[]);
       }
-    })
-  }, [setArtifacts])
+    });
+  }, [setArtifacts]);
 
   const taskMap = useMemo(() => {
-    const m = new Map<string, string>()
-    for (const task of tasks) m.set(task.id, task.title || t('common.newTask'))
-    return m
-  }, [tasks, t])
+    const m = new Map<string, string>();
+    for (const task of tasks) m.set(task.id, task.title || t('common.newTask'));
+    return m;
+  }, [tasks, t]);
 
   const filtered = useMemo(() => {
-    let list = filterTaskId
-      ? artifacts.filter((a) => a.taskId === filterTaskId)
-      : artifacts
+    let list = filterTaskId ? artifacts.filter((a) => a.taskId === filterTaskId) : artifacts;
     if (searchQuery) {
-      const q = searchQuery.toLowerCase()
-      list = list.filter((a) => a.name.toLowerCase().includes(q))
+      const q = searchQuery.toLowerCase();
+      list = list.filter((a) => a.name.toLowerCase().includes(q));
     }
-    return list
-  }, [artifacts, filterTaskId, searchQuery])
+    return list;
+  }, [artifacts, filterTaskId, searchQuery]);
 
-  const sorted = useMemo(() => sortArtifacts(filtered, sortBy), [filtered, sortBy])
+  const sorted = useMemo(() => sortArtifacts(filtered, sortBy), [filtered, sortBy]);
   const selectedArtifact = useMemo(
-    () => (selectedId ? artifacts.find((a) => a.id === selectedId) ?? null : null),
+    () => (selectedId ? (artifacts.find((a) => a.id === selectedId) ?? null) : null),
     [selectedId, artifacts],
-  )
+  );
 
   const taskIdsWithArtifacts = useMemo(() => {
-    const ids = new Set<string>()
-    for (const a of artifacts) ids.add(a.taskId)
-    return Array.from(ids)
-  }, [artifacts])
+    const ids = new Set<string>();
+    for (const a of artifacts) ids.add(a.taskId);
+    return Array.from(ids);
+  }, [artifacts]);
 
-  const handleNavigateToTask = useCallback((taskId: string, messageId: string) => {
-    setActiveTask(taskId)
-    setHighlightedMessage(messageId)
-    setMainView('chat')
-  }, [setActiveTask, setHighlightedMessage, setMainView])
+  const handleNavigateToTask = useCallback(
+    (taskId: string, messageId: string) => {
+      setActiveTask(taskId);
+      setHighlightedMessage(messageId);
+      setMainView('chat');
+    },
+    [setActiveTask, setHighlightedMessage, setMainView],
+  );
 
   return (
     <div className="flex h-full">
@@ -115,7 +116,9 @@ export default function FileBrowser() {
           >
             <option value="">{t('fileBrowser.allTasks')}</option>
             {taskIdsWithArtifacts.map((id) => (
-              <option key={id} value={id}>{taskMap.get(id) ?? id}</option>
+              <option key={id} value={id}>
+                {taskMap.get(id) ?? id}
+              </option>
             ))}
           </select>
           <select
@@ -172,5 +175,5 @@ export default function FileBrowser() {
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }

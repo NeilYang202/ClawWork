@@ -1,72 +1,70 @@
-import { motion } from 'framer-motion'
-import { X, FileText, GitBranch, CheckSquare, Square, Loader2, Cpu, ArrowUp, ArrowDown, Brain } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { useTaskStore } from '@/stores/taskStore'
-import { useMessageStore, EMPTY_MESSAGES } from '@/stores/messageStore'
-import { cn, formatTokenCount } from '@/lib/utils'
-import { motion as motionPresets } from '@/styles/design-tokens'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import type { ProgressStep, Artifact } from '@clawwork/shared'
+import { motion } from 'framer-motion';
+import { X, FileText, GitBranch, CheckSquare, Square, Loader2, Cpu, ArrowUp, ArrowDown, Brain } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useTaskStore } from '@/stores/taskStore';
+import { useMessageStore, EMPTY_MESSAGES } from '@/stores/messageStore';
+import { cn, formatTokenCount } from '@/lib/utils';
+import { motion as motionPresets } from '@/styles/design-tokens';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import type { ProgressStep, Artifact } from '@clawwork/shared';
 
 interface RightPanelProps {
-  onClose: () => void
+  onClose: () => void;
 }
 
 function extractProgressSteps(messages: { role: string; content: string }[]): ProgressStep[] {
-  const steps: ProgressStep[] = []
+  const steps: ProgressStep[] = [];
   for (const msg of messages) {
-    if (msg.role !== 'assistant') continue
-    const lines = msg.content.split('\n')
+    if (msg.role !== 'assistant') continue;
+    const lines = msg.content.split('\n');
     for (const line of lines) {
-      const checked = line.match(/^\s*[-*]\s*\[x\]\s+(.+)/i)
+      const checked = line.match(/^\s*[-*]\s*\[x\]\s+(.+)/i);
       if (checked) {
-        steps.push({ label: checked[1].trim(), status: 'completed' })
-        continue
+        steps.push({ label: checked[1].trim(), status: 'completed' });
+        continue;
       }
-      const unchecked = line.match(/^\s*[-*]\s*\[\s\]\s+(.+)/)
+      const unchecked = line.match(/^\s*[-*]\s*\[\s\]\s+(.+)/);
       if (unchecked) {
-        steps.push({ label: unchecked[1].trim(), status: 'pending' })
-        continue
+        steps.push({ label: unchecked[1].trim(), status: 'pending' });
+        continue;
       }
-      const numbered = line.match(/^\s*\d+\.\s+(.+)/)
+      const numbered = line.match(/^\s*\d+\.\s+(.+)/);
       if (numbered && lines.filter((l) => /^\s*\d+\./.test(l)).length >= 3) {
-        steps.push({ label: numbered[1].trim(), status: 'pending' })
+        steps.push({ label: numbered[1].trim(), status: 'pending' });
       }
     }
   }
-  return steps
+  return steps;
 }
 
 function collectArtifacts(messages: { artifacts: Artifact[] }[]): Artifact[] {
-  return messages.flatMap((m) => m.artifacts)
+  return messages.flatMap((m) => m.artifacts);
 }
 
 function StepIcon({ status }: { status: ProgressStep['status'] }) {
   switch (status) {
     case 'completed':
-      return <CheckSquare size={15} className="text-[var(--accent)] flex-shrink-0" />
+      return <CheckSquare size={15} className="text-[var(--accent)] flex-shrink-0" />;
     case 'in_progress':
-      return <Loader2 size={15} className="animate-spin text-[var(--accent)] flex-shrink-0" />
+      return <Loader2 size={15} className="animate-spin text-[var(--accent)] flex-shrink-0" />;
     case 'pending':
-      return <Square size={15} className="text-[var(--text-muted)] flex-shrink-0" />
+      return <Square size={15} className="text-[var(--text-muted)] flex-shrink-0" />;
   }
 }
 
 export default function RightPanel({ onClose }: RightPanelProps) {
-  const { t } = useTranslation()
-  const activeTaskId = useTaskStore((s) => s.activeTaskId)
-  const activeTask = useTaskStore((s) =>
-    s.tasks.find((task) => task.id === s.activeTaskId),
-  )
+  const { t } = useTranslation();
+  const activeTaskId = useTaskStore((s) => s.activeTaskId);
+  const activeTask = useTaskStore((s) => s.tasks.find((task) => task.id === s.activeTaskId));
   const messages = useMessageStore((s) =>
     activeTaskId ? (s.messagesByTask[activeTaskId] ?? EMPTY_MESSAGES) : EMPTY_MESSAGES,
-  )
+  );
 
-  const steps = extractProgressSteps(messages)
-  const artifacts = collectArtifacts(messages)
-  const doneCount = steps.filter((s) => s.status === 'completed').length
+  const steps = extractProgressSteps(messages);
+  const artifacts = collectArtifacts(messages);
+  const doneCount = steps.filter((s) => s.status === 'completed').length;
 
   return (
     <div className="flex flex-col h-full pt-10">
@@ -97,7 +95,12 @@ export default function RightPanel({ onClose }: RightPanelProps) {
                 {activeTask.thinkingLevel && activeTask.thinkingLevel !== 'off' && (
                   <div className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
                     <Brain size={13} className="text-[var(--text-muted)] flex-shrink-0" />
-                    <span>{t('chatInput.thinking')}: {t(`chatInput.thinking${activeTask.thinkingLevel.charAt(0).toUpperCase()}${activeTask.thinkingLevel.slice(1)}`)}</span>
+                    <span>
+                      {t('chatInput.thinking')}:{' '}
+                      {t(
+                        `chatInput.thinking${activeTask.thinkingLevel.charAt(0).toUpperCase()}${activeTask.thinkingLevel.slice(1)}`,
+                      )}
+                    </span>
                   </div>
                 )}
                 {(activeTask.inputTokens != null || activeTask.outputTokens != null) && (
@@ -143,14 +146,10 @@ export default function RightPanel({ onClose }: RightPanelProps) {
                   <motion.div
                     key={i}
                     {...motionPresets.listItem}
-                    className={cn(
-                      'flex items-start gap-2 px-2 py-1.5 rounded text-sm text-[var(--text-secondary)]',
-                    )}
+                    className={cn('flex items-start gap-2 px-2 py-1.5 rounded text-sm text-[var(--text-secondary)]')}
                   >
                     <StepIcon status={step.status} />
-                    <span className={step.status === 'completed' ? 'line-through opacity-60' : ''}>
-                      {step.label}
-                    </span>
+                    <span className={step.status === 'completed' ? 'line-through opacity-60' : ''}>{step.label}</span>
                   </motion.div>
                 ))}
               </div>
@@ -161,7 +160,7 @@ export default function RightPanel({ onClose }: RightPanelProps) {
             <div className="space-y-1.5">
               {artifacts.length === 0 ? (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-tertiary)] text-sm text-[var(--text-secondary)]">
-                    <FileText size={15} className="opacity-60" />
+                  <FileText size={15} className="opacity-60" />
                   <span className="truncate">{t('common.noFiles')}</span>
                 </div>
               ) : (
@@ -191,5 +190,5 @@ export default function RightPanel({ onClose }: RightPanelProps) {
         </ScrollArea>
       </Tabs>
     </div>
-  )
+  );
 }

@@ -10,15 +10,19 @@ import ErrorBoundary from './components/ErrorBoundary';
 if (!window.clawwork) {
   const root = document.getElementById('root')!;
   const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100vh;color:var(--danger,#ef4444);font-family:monospace;padding:2rem;text-align:center';
+  wrapper.style.cssText =
+    'display:flex;align-items:center;justify-content:center;height:100vh;color:var(--danger,#ef4444);font-family:monospace;padding:2rem;text-align:center';
   const heading = document.createElement('h2');
   heading.textContent = 'Preload bridge missing';
   const detail = document.createElement('p');
-  detail.textContent = 'window.clawwork is undefined. The preload script failed to expose the ClawWork API. Check that the preload is built as CJS (not ESM) when sandbox is enabled.';
+  detail.textContent =
+    'window.clawwork is undefined. The preload script failed to expose the ClawWork API. Check that the preload is built as CJS (not ESM) when sandbox is enabled.';
   wrapper.appendChild(heading);
   wrapper.appendChild(detail);
   root.appendChild(wrapper);
-  throw new Error('[fatal] window.clawwork is undefined — preload bridge not loaded. Likely ESM/CJS format mismatch with sandbox:true.');
+  throw new Error(
+    '[fatal] window.clawwork is undefined — preload bridge not loaded. Likely ESM/CJS format mismatch with sandbox:true.',
+  );
 }
 
 // Restore persisted language preference

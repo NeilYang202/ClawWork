@@ -26,11 +26,27 @@ export function exportDebugBundle(options: ExportDebugBundleOptions): { bundlePa
   mkdirSync(bundlePath, { recursive: true });
 
   const events = options.logger.getRecentEvents(options.filter);
-  writeFileSync(join(bundlePath, 'recent-events.ndjson'), events.map((event) => JSON.stringify(event)).join('\n') + (events.length ? '\n' : ''), 'utf8');
+  writeFileSync(
+    join(bundlePath, 'recent-events.ndjson'),
+    events.map((event) => JSON.stringify(event)).join('\n') + (events.length ? '\n' : ''),
+    'utf8',
+  );
   writeFileSync(join(bundlePath, 'timeline.json'), JSON.stringify({ events }, null, 2), 'utf8');
-  writeFileSync(join(bundlePath, 'gateway-status.json'), JSON.stringify(sanitizeForLog(options.meta?.gatewayStatus ?? {}), null, 2), 'utf8');
-  writeFileSync(join(bundlePath, 'config.sanitized.json'), JSON.stringify(sanitizeForLog(options.meta?.config ?? {}), null, 2), 'utf8');
-  writeFileSync(join(bundlePath, 'environment.json'), JSON.stringify(sanitizeForLog(options.meta?.environment ?? {}), null, 2), 'utf8');
+  writeFileSync(
+    join(bundlePath, 'gateway-status.json'),
+    JSON.stringify(sanitizeForLog(options.meta?.gatewayStatus ?? {}), null, 2),
+    'utf8',
+  );
+  writeFileSync(
+    join(bundlePath, 'config.sanitized.json'),
+    JSON.stringify(sanitizeForLog(options.meta?.config ?? {}), null, 2),
+    'utf8',
+  );
+  writeFileSync(
+    join(bundlePath, 'environment.json'),
+    JSON.stringify(sanitizeForLog(options.meta?.environment ?? {}), null, 2),
+    'utf8',
+  );
 
   return { bundlePath, events };
 }

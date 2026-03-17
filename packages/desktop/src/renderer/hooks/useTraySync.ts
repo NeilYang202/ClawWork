@@ -30,9 +30,7 @@ export function useTraySync(): void {
     else if (hasUnread) status = 'unread';
     else status = 'idle';
 
-    const activeIds = tasks
-      .filter((t) => processingTasks.has(t.id))
-      .map((t) => t.id);
+    const activeIds = tasks.filter((t) => processingTasks.has(t.id)).map((t) => t.id);
     const taskIdsKey = activeIds.join(',');
 
     if (prevRef.current.status === status && prevRef.current.taskIds === taskIdsKey) return;

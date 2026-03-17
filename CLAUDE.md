@@ -56,20 +56,20 @@ Desktop → Gateway (:18789): `chat.send` sends user messages (`deliver: false` 
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Electron 34 + electron-vite 3 |
-| Frontend | React 19, TypeScript 5.x, Tailwind CSS v4 |
-| UI Components | shadcn/ui (Radix UI + cva + tailwind-merge) |
-| Animation | Framer Motion |
-| Fonts | Inter Variable (UI) + JetBrains Mono (code) |
-| State Management | Zustand 5 |
-| Database | better-sqlite3 + Drizzle ORM |
-| Git Operations | simple-git |
-| Icons | lucide-react |
-| Build | Vite 6 (via electron-vite) |
-| Packaging | electron-builder (macOS Universal Binary) |
-| Package Manager | pnpm 10 workspace |
+| Layer            | Technology                                  |
+| ---------------- | ------------------------------------------- |
+| Framework        | Electron 34 + electron-vite 3               |
+| Frontend         | React 19, TypeScript 5.x, Tailwind CSS v4   |
+| UI Components    | shadcn/ui (Radix UI + cva + tailwind-merge) |
+| Animation        | Framer Motion                               |
+| Fonts            | Inter Variable (UI) + JetBrains Mono (code) |
+| State Management | Zustand 5                                   |
+| Database         | better-sqlite3 + Drizzle ORM                |
+| Git Operations   | simple-git                                  |
+| Icons            | lucide-react                                |
+| Build            | Vite 6 (via electron-vite)                  |
+| Packaging        | electron-builder (macOS Universal Binary)   |
+| Package Manager  | pnpm 10 workspace                           |
 
 ## Development Commands
 
@@ -97,17 +97,17 @@ Desktop communicates with Gateway (:18789) via a single WS connection:
 
 **Outbound (Desktop → Gateway):**
 
-| RPC Method | Purpose |
-|---|---|
-| `chat.send` | Send user message (`sessionKey` + `message` + `idempotencyKey`, `deliver: false`) |
-| `chat.history` | Fetch session message history |
-| `sessions.list` | List all sessions |
+| RPC Method      | Purpose                                                                           |
+| --------------- | --------------------------------------------------------------------------------- |
+| `chat.send`     | Send user message (`sessionKey` + `message` + `idempotencyKey`, `deliver: false`) |
+| `chat.history`  | Fetch session message history                                                     |
+| `sessions.list` | List all sessions                                                                 |
 
 **Inbound (Gateway → Desktop events):**
 
-| Event | Purpose |
-|---|---|
-| `chat` | Agent text reply (`payload.message.content[]`) |
+| Event   | Purpose                                            |
+| ------- | -------------------------------------------------- |
+| `chat`  | Agent text reply (`payload.message.content[]`)     |
 | `agent` | Tool-call events (requires `caps:["tool-events"]`) |
 
 ### File Transfer
@@ -130,12 +130,12 @@ See memory files for detailed phase history and technical pitfalls discovered du
 
 ## Known Issues & Risks
 
-| Issue | Impact | Reference |
-|---|---|---|
-| Incomplete Gateway protocol docs | Must reverse-engineer from source | Refer to feishu/dingtalk plugin |
-| Gateway broadcasts without session filtering | Client must filter by sessionKey | [#32579](https://github.com/openclaw/openclaw/issues/32579) |
-| `mediaLocalRoots` security check | File sends may be rejected | [#20258](https://github.com/openclaw/openclaw/issues/20258), [#36477](https://github.com/openclaw/openclaw/issues/36477) |
-| Session auto-reset at 4 AM | Long-running Task context gets cleared | Requires server-side config to disable auto-reset |
+| Issue                                        | Impact                                 | Reference                                                                                                                |
+| -------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Incomplete Gateway protocol docs             | Must reverse-engineer from source      | Refer to feishu/dingtalk plugin                                                                                          |
+| Gateway broadcasts without session filtering | Client must filter by sessionKey       | [#32579](https://github.com/openclaw/openclaw/issues/32579)                                                              |
+| `mediaLocalRoots` security check             | File sends may be rejected             | [#20258](https://github.com/openclaw/openclaw/issues/20258), [#36477](https://github.com/openclaw/openclaw/issues/36477) |
+| Session auto-reset at 4 AM                   | Long-running Task context gets cleared | Requires server-side config to disable auto-reset                                                                        |
 
 ## Coding Conventions
 

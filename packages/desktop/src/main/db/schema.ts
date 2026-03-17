@@ -21,7 +21,9 @@ export const tasks = sqliteTable('tasks', {
 
 export const messages = sqliteTable('messages', {
   id: text('id').primaryKey(),
-  taskId: text('task_id').notNull().references(() => tasks.id),
+  taskId: text('task_id')
+    .notNull()
+    .references(() => tasks.id),
   role: text('role').notNull(),
   content: text('content').notNull(),
   timestamp: text('timestamp').notNull(),
@@ -29,8 +31,12 @@ export const messages = sqliteTable('messages', {
 
 export const artifacts = sqliteTable('artifacts', {
   id: text('id').primaryKey(),
-  taskId: text('task_id').notNull().references(() => tasks.id),
-  messageId: text('message_id').notNull().references(() => messages.id),
+  taskId: text('task_id')
+    .notNull()
+    .references(() => tasks.id),
+  messageId: text('message_id')
+    .notNull()
+    .references(() => messages.id),
   type: text('type').notNull().default('file'),
   name: text('name').notNull(),
   filePath: text('file_path').notNull(),

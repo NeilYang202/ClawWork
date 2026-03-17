@@ -11,10 +11,9 @@ export default function ThinkingIndicator() {
       transition={{ duration: 0.15 }}
       className="flex gap-3.5 py-4"
     >
-      <div className={cn(
-        'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
-        'bg-[var(--accent-dim)]',
-      )}>
+      <div
+        className={cn('flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center', 'bg-[var(--accent-dim)]')}
+      >
         <Bot size={16} className="text-[var(--accent)]" />
       </div>
       <div className="flex items-center gap-1.5 py-2">

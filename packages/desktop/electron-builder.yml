@@ -8,9 +8,9 @@ extraResources:
     to: icon.png
 
 files:
-  - "out/**/*"
-  - "node_modules/**/*"
-  - "package.json"
+  - 'out/**/*'
+  - 'node_modules/**/*'
+  - 'package.json'
 artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 afterPack: ./scripts/afterPack.cjs
 mac:

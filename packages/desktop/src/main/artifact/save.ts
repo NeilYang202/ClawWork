@@ -84,19 +84,21 @@ export async function saveArtifact(params: SaveArtifactParams): Promise<Artifact
   };
 
   const db = getDb();
-  db.insert(artifacts).values({
-    id: artifact.id,
-    taskId: artifact.taskId,
-    messageId: artifact.messageId,
-    type: artifact.type,
-    name: artifact.name,
-    filePath: artifact.filePath,
-    localPath: artifact.localPath,
-    mimeType: artifact.mimeType,
-    size: artifact.size,
-    gitSha: artifact.gitSha,
-    createdAt: artifact.createdAt,
-  }).run();
+  db.insert(artifacts)
+    .values({
+      id: artifact.id,
+      taskId: artifact.taskId,
+      messageId: artifact.messageId,
+      type: artifact.type,
+      name: artifact.name,
+      filePath: artifact.filePath,
+      localPath: artifact.localPath,
+      mimeType: artifact.mimeType,
+      size: artifact.size,
+      gitSha: artifact.gitSha,
+      createdAt: artifact.createdAt,
+    })
+    .run();
 
   return artifact;
 }

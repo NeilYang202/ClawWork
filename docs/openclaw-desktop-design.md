@@ -28,15 +28,15 @@ Core value propositions:
 
 ### 1.3 Feature Comparison with Claude Cowork
 
-| Capability | Claude Cowork | This Project | Difference |
-|------|--------------|--------|----------|
-| Parallel Tasks | ✅ Left-side list switching | ✅ Same interaction model | Fully aligned |
-| Three-panel layout | ✅ Nav + Chat + Context | ✅ Same | Fully aligned |
-| Progress panel | ✅ Task step tracking | ✅ Same | Fully aligned |
-| Artifacts panel | ✅ Current conversation artifacts | ✅ Same + global file manager | Enhanced |
-| File manager | ❌ None | ✅ Global artifact browse/search/filter | New |
-| Backend | Claude API | OpenClaw Gateway | Replaced |
-| Storage | Ephemeral sessions | Local Git Repo persistence | Enhanced |
+| Capability         | Claude Cowork                     | This Project                            | Difference    |
+| ------------------ | --------------------------------- | --------------------------------------- | ------------- |
+| Parallel Tasks     | ✅ Left-side list switching       | ✅ Same interaction model               | Fully aligned |
+| Three-panel layout | ✅ Nav + Chat + Context           | ✅ Same                                 | Fully aligned |
+| Progress panel     | ✅ Task step tracking             | ✅ Same                                 | Fully aligned |
+| Artifacts panel    | ✅ Current conversation artifacts | ✅ Same + global file manager           | Enhanced      |
+| File manager       | ❌ None                           | ✅ Global artifact browse/search/filter | New           |
+| Backend            | Claude API                        | OpenClaw Gateway                        | Replaced      |
+| Storage            | Ephemeral sessions                | Local Git Repo persistence              | Enhanced      |
 
 ### 1.4 Non-Goals
 
@@ -171,17 +171,17 @@ Desktop acts as a Gateway WebSocket client, communicating via JSON-RPC style fra
 
 **Outbound (Desktop → Gateway):**
 
-| RPC Method | Purpose |
-|---|---|
-| `chat.send` | Send user message (`sessionKey` + `message` + `idempotencyKey`, `deliver: false`) |
-| `chat.history` | Fetch session message history |
-| `sessions.list` | List all sessions |
+| RPC Method      | Purpose                                                                           |
+| --------------- | --------------------------------------------------------------------------------- |
+| `chat.send`     | Send user message (`sessionKey` + `message` + `idempotencyKey`, `deliver: false`) |
+| `chat.history`  | Fetch session message history                                                     |
+| `sessions.list` | List all sessions                                                                 |
 
 **Inbound (Gateway → Desktop events):**
 
-| Event | Purpose |
-|---|---|
-| `chat` | Agent text reply (`payload.message.content[]`) |
+| Event   | Purpose                                            |
+| ------- | -------------------------------------------------- |
+| `chat`  | Agent text reply (`payload.message.content[]`)     |
 | `agent` | Tool-call events (requires `caps:["tool-events"]`) |
 
 **Connection Handshake**: Gateway sends `connect.challenge` (containing nonce) first; client replies with a `connect` request (protocol=3, client.id=`gateway-client`, mode=`backend`).
@@ -257,10 +257,10 @@ Gateway broadcasts events from all sessions via WebSocket (known design: no sess
 
 MVP assumes co-located deployment only: artifact files are copied directly to the workspace artifact directory via local paths.
 
-| Scenario | Approach | Notes |
-|------|------|------|
-| **Co-located (MVP)** | Pass path directly | Agent artifacts are passed via `mediaPath`; ClawWork reads the local file and copies to the Task artifact directory |
-| **Remote (future)** | Third-party storage relay | Artifacts uploaded to third-party storage (WebDAV / S3 / MinIO); ClawWork downloads from the storage service |
+| Scenario             | Approach                  | Notes                                                                                                               |
+| -------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Co-located (MVP)** | Pass path directly        | Agent artifacts are passed via `mediaPath`; ClawWork reads the local file and copies to the Task artifact directory |
+| **Remote (future)**  | Third-party storage relay | Artifacts uploaded to third-party storage (WebDAV / S3 / MinIO); ClawWork downloads from the storage service        |
 
 ```
 Local path (co-located) ← MVP default
@@ -782,24 +782,24 @@ clawwork (pnpm monorepo)
 ### 6.4 Theme System
 
 ```css
-:root[data-theme="dark"] {
-  --bg-primary: #1C1C1C;
+:root[data-theme='dark'] {
+  --bg-primary: #1c1c1c;
   --bg-secondary: #242424;
-  --bg-tertiary: #2A2A2A;
-  --accent: #0FFD0D;
-  --text-primary: #F3F4F4;
-  --text-secondary: #9CA3AF;
+  --bg-tertiary: #2a2a2a;
+  --accent: #0ffd0d;
+  --text-primary: #f3f4f4;
+  --text-secondary: #9ca3af;
   --border: rgba(255, 255, 255, 0.08);
   --border-accent: rgba(15, 253, 93, 0.15);
 }
 
-:root[data-theme="light"] {
-  --bg-primary: #FAFAFA;
-  --bg-secondary: #FFFFFF;
-  --bg-tertiary: #F3F4F6;
-  --accent: #0B8A0A;
+:root[data-theme='light'] {
+  --bg-primary: #fafafa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f3f4f6;
+  --accent: #0b8a0a;
   --text-primary: #111827;
-  --text-secondary: #6B7280;
+  --text-secondary: #6b7280;
   --border: rgba(0, 0, 0, 0.08);
   --border-accent: rgba(11, 138, 10, 0.15);
 }
@@ -814,12 +814,14 @@ clawwork (pnpm monorepo)
 **Decision**: Implement the full conversation flow via direct Gateway WebSocket connection, without using the earlier dual-channel bridge design.
 
 **Rationale**:
+
 - A single Gateway channel handles the complete conversation flow (`chat.send` + `chat`/`agent` events); no additional Plugin layer needed
 - One fewer IPC channel reduces architectural complexity and debugging costs
 - Avoids legacy bridge validation bugs ([#12484]) and configuration complexity
 - The `deliver: false` parameter ensures messages don't go through external channels — only through Gateway events
 
 **History**:
+
 - An earlier design featured a dual-channel bridge architecture (an intermediary process ran inside OpenClaw, communicating with Desktop via :13579 WS)
 - During implementation, we confirmed that a single Gateway channel suffices; the bridge dependency was removed in the Gateway-Only refactor (G1-G9)
 
@@ -828,12 +830,14 @@ clawwork (pnpm monorepo)
 **Decision**: Filesystem + SQLite index + Git versioning.
 
 **Rationale**:
+
 - Artifact files (code, docs, images) are naturally suited to filesystem storage; storing blobs in SQLite is inappropriate
 - Git provides free version traceability — users can see the change history for each Task's artifacts
 - If multi-device sync is needed in the future, git remote is a ready-made infrastructure
 - SQLite handles indexing and full-text search only, staying lightweight
 
 **Trade-offs**:
+
 - Git is not ideal for large binary files (>100MB images/videos). If large file support is needed later, consider git-lfs or a separate file storage strategy
 - Auto-commits create extensive git history; periodic gc or retention limits may be needed
 
@@ -842,12 +846,14 @@ clawwork (pnpm monorepo)
 **Decision**: Use Electron.
 
 **Rationale**:
+
 - OpenClaw itself is a TypeScript ecosystem; Electron maintains tech-stack consistency
 - shadcn/ui and the React ecosystem are mature, with high component reusability
 - Electron's Node integration makes SQLite, git operations, and filesystem access more straightforward
 - For a three-panel layout app requiring heavy UI interaction, Electron's Chromium rendering engine is more stable
 
 **Trade-offs**:
+
 - Larger bundle size (~150MB); Tauri would be much smaller
 - Higher memory usage, but acceptable for a desktop developer tool
 
@@ -855,20 +861,21 @@ clawwork (pnpm monorepo)
 
 ## 8. Risks & Open Items
 
-| Risk | Impact | Mitigation |
-|------|------|----------|
-| Incomplete OpenClaw Gateway protocol docs | Blocks Phase 1 | Read source code first; reverse-engineer by referencing feishu plugin implementation |
-| Gateway broadcasts all session events [#32579] | Client receives messages from unrelated sessions; adds filtering overhead | Client-side filtering by sessionKey; performance impact is manageable |
-| `mediaLocalRoots` security check [#20258] [#36477] | File sends may be rejected | Properly configure the mediaLocalRoots parameter |
-| Session auto-reset at 4 AM | Long-running Task conversation context gets cleared | Server-side config to disable auto-reset |
-| Git auto-commit performance | Slow commits with many small files | Batch commits + debounce |
-| macOS code signing and notarization | Users unable to install | Handle in Phase 4; use ad-hoc signing during development |
+| Risk                                               | Impact                                                                    | Mitigation                                                                           |
+| -------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Incomplete OpenClaw Gateway protocol docs          | Blocks Phase 1                                                            | Read source code first; reverse-engineer by referencing feishu plugin implementation |
+| Gateway broadcasts all session events [#32579]     | Client receives messages from unrelated sessions; adds filtering overhead | Client-side filtering by sessionKey; performance impact is manageable                |
+| `mediaLocalRoots` security check [#20258] [#36477] | File sends may be rejected                                                | Properly configure the mediaLocalRoots parameter                                     |
+| Session auto-reset at 4 AM                         | Long-running Task conversation context gets cleared                       | Server-side config to disable auto-reset                                             |
+| Git auto-commit performance                        | Slow commits with many small files                                        | Batch commits + debounce                                                             |
+| macOS code signing and notarization                | Users unable to install                                                   | Handle in Phase 4; use ad-hoc signing during development                             |
 
 ---
 
 ## 9. Appendix: Reference Resources
 
 **Official Documentation:**
+
 - OpenClaw main repo: https://github.com/openclaw/openclaw
 - OpenClaw Channel docs: https://docs.openclaw.ai/cli/channels
 - Gateway protocol: https://docs.openclaw.ai/gateway/protocol
@@ -877,6 +884,7 @@ clawwork (pnpm monorepo)
 - Command queue system: https://docs.openclaw.ai/concepts/queue
 
 **Known Issues (to follow up):**
+
 - sendMedia mediaLocalRoots: https://github.com/openclaw/openclaw/issues/20258
 - Slack mediaLocalRoots regression: https://github.com/openclaw/openclaw/issues/36477
 - Gateway broadcast without session filtering: https://github.com/openclaw/openclaw/issues/32579

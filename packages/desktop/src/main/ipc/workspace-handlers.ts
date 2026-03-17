@@ -1,10 +1,5 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron';
-import {
-  getWorkspacePath,
-  writeConfig,
-  isWorkspaceConfigured,
-  getDefaultWorkspacePath,
-} from '../workspace/config.js';
+import { getWorkspacePath, writeConfig, isWorkspaceConfigured, getDefaultWorkspacePath } from '../workspace/config.js';
 import { initWorkspace } from '../workspace/init.js';
 import { initDatabase } from '../db/index.js';
 

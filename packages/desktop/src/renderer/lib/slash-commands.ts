@@ -30,29 +30,40 @@ export interface SlashCommand {
  * PLACEHOLDER: replace/extend with dynamic gateway commands when available.
  */
 export const STATIC_SLASH_COMMANDS: SlashCommand[] = [
-  { name: 'new',      description: 'Reset the session',            argHint: undefined,                              category: 'session' },
-  { name: 'reset',    description: 'Reset the session',            argHint: undefined,                              category: 'session' },
-  { name: 'abort',    description: 'Abort the active run',         argHint: undefined,                              category: 'session' },
-  { name: 'agent',    description: 'Switch agent (or open picker)', argHint: '<id>',                                category: 'session' },
-  { name: 'agents',   description: 'Open agent picker',            argHint: undefined,                              category: 'session' },
-  { name: 'session',  description: 'Switch session (or open picker)', argHint: '<key>',                             category: 'session' },
-  { name: 'sessions', description: 'Open session picker',          argHint: undefined,                              category: 'session' },
+  { name: 'new', description: 'Reset the session', argHint: undefined, category: 'session' },
+  { name: 'reset', description: 'Reset the session', argHint: undefined, category: 'session' },
+  { name: 'abort', description: 'Abort the active run', argHint: undefined, category: 'session' },
+  { name: 'agent', description: 'Switch agent (or open picker)', argHint: '<id>', category: 'session' },
+  { name: 'agents', description: 'Open agent picker', argHint: undefined, category: 'session' },
+  { name: 'session', description: 'Switch session (or open picker)', argHint: '<key>', category: 'session' },
+  { name: 'sessions', description: 'Open session picker', argHint: undefined, category: 'session' },
 
-  { name: 'model',    description: 'Set model (or open picker)',   argHint: '<provider/model>',                     category: 'model', pickerType: 'model' },
-  { name: 'models',   description: 'Open model picker',            argHint: undefined,                              category: 'model' },
-  { name: 'think',    description: 'Set thinking level',           argHint: 'off|minimal|low|medium|high|adaptive', category: 'model' },
-  { name: 'fast',     description: 'Set fast mode',                argHint: 'status|on|off',                        category: 'model' },
-  { name: 'verbose',  description: 'Set verbose on/off',           argHint: 'on|off',                               category: 'model' },
-  { name: 'reasoning',description: 'Set reasoning on/off',         argHint: 'on|off|stream',                        category: 'model' },
-  { name: 'usage',    description: 'Toggle per-response usage line', argHint: 'off|tokens|full|cost',               category: 'model' },
+  {
+    name: 'model',
+    description: 'Set model (or open picker)',
+    argHint: '<provider/model>',
+    category: 'model',
+    pickerType: 'model',
+  },
+  { name: 'models', description: 'Open model picker', argHint: undefined, category: 'model' },
+  {
+    name: 'think',
+    description: 'Set thinking level',
+    argHint: 'off|minimal|low|medium|high|adaptive',
+    category: 'model',
+  },
+  { name: 'fast', description: 'Set fast mode', argHint: 'status|on|off', category: 'model' },
+  { name: 'verbose', description: 'Set verbose on/off', argHint: 'on|off', category: 'model' },
+  { name: 'reasoning', description: 'Set reasoning on/off', argHint: 'on|off|stream', category: 'model' },
+  { name: 'usage', description: 'Toggle per-response usage line', argHint: 'off|tokens|full|cost', category: 'model' },
 
-  { name: 'elevated', description: 'Set elevated permission level', argHint: 'on|off|ask|full',                     category: 'access' },
-  { name: 'elev',     description: 'Alias for /elevated',          argHint: 'on|off|ask|full',                      category: 'access' },
-  { name: 'activation', description: 'Set group activation mode', argHint: 'mention|always',                        category: 'access' },
+  { name: 'elevated', description: 'Set elevated permission level', argHint: 'on|off|ask|full', category: 'access' },
+  { name: 'elev', description: 'Alias for /elevated', argHint: 'on|off|ask|full', category: 'access' },
+  { name: 'activation', description: 'Set group activation mode', argHint: 'mention|always', category: 'access' },
 
-  { name: 'help',     description: 'Show slash command help',      argHint: undefined,                              category: 'info' },
-  { name: 'status',   description: 'Show gateway status summary',  argHint: undefined,                              category: 'info' },
-  { name: 'settings', description: 'Open settings',                argHint: undefined,                              category: 'info' },
+  { name: 'help', description: 'Show slash command help', argHint: undefined, category: 'info' },
+  { name: 'status', description: 'Show gateway status summary', argHint: undefined, category: 'info' },
+  { name: 'settings', description: 'Open settings', argHint: undefined, category: 'info' },
 ];
 
 export const CATEGORY_ORDER: SlashCommandCategory[] = ['session', 'model', 'access', 'info'];
@@ -84,10 +95,7 @@ export function groupCommandsByCategory(
  * Filter slash commands by the text the user has typed after the `/`.
  * Returns all commands when query is empty (bare "/" input).
  */
-export function filterSlashCommands(
-  query: string,
-  commands: SlashCommand[] = STATIC_SLASH_COMMANDS,
-): SlashCommand[] {
+export function filterSlashCommands(query: string, commands: SlashCommand[] = STATIC_SLASH_COMMANDS): SlashCommand[] {
   const q = query.toLowerCase();
   if (!q) return commands;
   return commands.filter((cmd) => cmd.name.startsWith(q));
@@ -104,7 +112,10 @@ export function filterSlashCommands(
  *
  * Returns `{ active: true, query }` or `{ active: false }`.
  */
-export function parseSlashQuery(value: string, selectionStart: number): { active: false } | { active: true; query: string } {
+export function parseSlashQuery(
+  value: string,
+  selectionStart: number,
+): { active: false } | { active: true; query: string } {
   // Only consider text up to cursor
   const before = value.slice(0, selectionStart);
   // Must be on the first line (no newlines before cursor)
@@ -120,7 +131,10 @@ export function getEnumOptions(cmd: SlashCommand): string[] | null {
   if (!cmd.argHint) return null;
   if (cmd.argHint.includes('<')) return null;
   if (!cmd.argHint.includes('|')) return null;
-  return cmd.argHint.split('|').map((s) => s.trim()).filter(Boolean);
+  return cmd.argHint
+    .split('|')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 export function hasArgPicker(cmd: SlashCommand): boolean {

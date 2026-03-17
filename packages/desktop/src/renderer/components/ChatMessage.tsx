@@ -16,7 +16,10 @@ interface ChatMessageProps {
   onFileClick?: (file: { path: string; content: string }) => void;
 }
 
-function parseFileBlocks(content: string): { files: { path: string; content: string; lineCount: number }[]; text: string } {
+function parseFileBlocks(content: string): {
+  files: { path: string; content: string; lineCount: number }[];
+  text: string;
+} {
   const fileRegex = /<file path="([^"]+)">\n([\s\S]*?)\n<\/file>/g;
   const files: { path: string; content: string; lineCount: number }[] = [];
   let match;
@@ -53,13 +56,19 @@ function FileBlockChip({
   );
 }
 
-const ChatMessage = memo(function ChatMessage({ message, highlighted, onHighlightDone, onImageClick, onFileClick }: ChatMessageProps) {
+const ChatMessage = memo(function ChatMessage({
+  message,
+  highlighted,
+  onHighlightDone,
+  onImageClick,
+  onFileClick,
+}: ChatMessageProps) {
   const { t } = useTranslation();
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
   const ref = useRef<HTMLDivElement>(null);
   const [thinkingOpen, setThinkingOpen] = useState(false);
-  const parsedFiles = useMemo(() => isUser ? parseFileBlocks(message.content) : null, [isUser, message.content]);
+  const parsedFiles = useMemo(() => (isUser ? parseFileBlocks(message.content) : null), [isUser, message.content]);
 
   useEffect(() => {
     if (!highlighted || !ref.current) return;
@@ -86,11 +95,7 @@ const ChatMessage = memo(function ChatMessage({ message, highlighted, onHighligh
       initial={motionPresets.listItem.initial}
       animate={motionPresets.listItem.animate}
       transition={motionPresets.listItem.transition}
-      className={cn(
-        'flex gap-3.5 py-4',
-        isUser && 'flex-row-reverse',
-        highlighted && 'animate-highlight rounded-lg',
-      )}
+      className={cn('flex gap-3.5 py-4', isUser && 'flex-row-reverse', highlighted && 'animate-highlight rounded-lg')}
     >
       <div
         className={cn(
@@ -138,10 +143,7 @@ const ChatMessage = memo(function ChatMessage({ message, highlighted, onHighligh
             >
               <Brain size={12} className="text-[var(--accent)] opacity-70" />
               <span>{t('chatMessage.thinkingProcess')}</span>
-              <ChevronDown
-                size={11}
-                className={cn('transition-transform', thinkingOpen && 'rotate-180')}
-              />
+              <ChevronDown size={11} className={cn('transition-transform', thinkingOpen && 'rotate-180')} />
             </button>
             <AnimatePresence>
               {thinkingOpen && (
@@ -152,12 +154,14 @@ const ChatMessage = memo(function ChatMessage({ message, highlighted, onHighligh
                   transition={{ duration: 0.15 }}
                   className="overflow-hidden"
                 >
-                  <div className={cn(
-                    'mt-1.5 px-3 py-2 rounded-lg text-xs leading-relaxed',
-                    'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
-                    'border-l-2 border-[var(--accent)] border-opacity-30',
-                    'max-h-60 overflow-y-auto',
-                  )}>
+                  <div
+                    className={cn(
+                      'mt-1.5 px-3 py-2 rounded-lg text-xs leading-relaxed',
+                      'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
+                      'border-l-2 border-[var(--accent)] border-opacity-30',
+                      'max-h-60 overflow-y-auto',
+                    )}
+                  >
                     <MarkdownContent content={message.thinkingContent} />
                   </div>
                 </motion.div>
@@ -167,38 +171,38 @@ const ChatMessage = memo(function ChatMessage({ message, highlighted, onHighligh
         )}
 
         {/* Text content */}
-        {(message.content || !images?.length) && (() => {
-          if (isUser && parsedFiles) {
-            const { files, text } = parsedFiles;
-            const hasContent = files.length > 0 || text;
-            if (!hasContent) return null;
-            return (
-              <div className={cn(
-                'inline-block leading-relaxed rounded-2xl px-4 py-3',
-                'bg-[var(--bg-tertiary)] text-[var(--text-primary)]',
-              )}>
-                <div className="flex flex-wrap">
-                  {files.map((f, i) => (
-                    <FileBlockChip
-                      key={`${f.path}-${i}`}
-                      file={f}
-                      onClick={() => onFileClick?.({ path: f.path, content: f.content })}
-                    />
-                  ))}
+        {(message.content || !images?.length) &&
+          (() => {
+            if (isUser && parsedFiles) {
+              const { files, text } = parsedFiles;
+              const hasContent = files.length > 0 || text;
+              if (!hasContent) return null;
+              return (
+                <div
+                  className={cn(
+                    'inline-block leading-relaxed rounded-2xl px-4 py-3',
+                    'bg-[var(--bg-tertiary)] text-[var(--text-primary)]',
+                  )}
+                >
+                  <div className="flex flex-wrap">
+                    {files.map((f, i) => (
+                      <FileBlockChip
+                        key={`${f.path}-${i}`}
+                        file={f}
+                        onClick={() => onFileClick?.({ path: f.path, content: f.content })}
+                      />
+                    ))}
+                  </div>
+                  {text && <p className="whitespace-pre-wrap">{text}</p>}
                 </div>
-                {text && <p className="whitespace-pre-wrap">{text}</p>}
+              );
+            }
+            return (
+              <div className={cn('inline-block leading-relaxed rounded-2xl px-4 py-3', 'text-[var(--text-primary)]')}>
+                <MarkdownContent content={message.content} onImageClick={onImageClick} showMessageCopy />
               </div>
             );
-          }
-          return (
-            <div className={cn(
-              'inline-block leading-relaxed rounded-2xl px-4 py-3',
-              'text-[var(--text-primary)]',
-            )}>
-              <MarkdownContent content={message.content} onImageClick={onImageClick} showMessageCopy />
-            </div>
-          );
-        })()}
+          })()}
         {message.toolCalls.length > 0 && (
           <div className="mt-2 space-y-1">
             {message.toolCalls.map((tc) => (

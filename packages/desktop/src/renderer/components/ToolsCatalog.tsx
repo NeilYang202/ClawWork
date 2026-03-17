@@ -1,32 +1,36 @@
-import { Wrench, Plug } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { cn } from '@/lib/utils'
+import { Wrench, Plug } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
 import {
-  DropdownMenu, DropdownMenuTrigger,
-  DropdownMenuContent, DropdownMenuSeparator,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuSeparator,
   DropdownMenuItem,
-} from '@/components/ui/dropdown-menu'
-import type { ToolGroup, ToolEntry } from '@clawwork/shared'
+} from '@/components/ui/dropdown-menu';
+import type { ToolGroup, ToolEntry } from '@clawwork/shared';
 
 interface ToolsCatalogProps {
-  groups: ToolGroup[]
-  onToolSelect?: (tool: ToolEntry) => void
+  groups: ToolGroup[];
+  onToolSelect?: (tool: ToolEntry) => void;
 }
 
 export default function ToolsCatalog({ groups, onToolSelect }: ToolsCatalogProps) {
-  const { t } = useTranslation()
-  if (groups.length === 0) return null
+  const { t } = useTranslation();
+  if (groups.length === 0) return null;
 
-  const totalTools = groups.reduce((sum, g) => sum + g.tools.length, 0)
+  const totalTools = groups.reduce((sum, g) => sum + g.tools.length, 0);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className={cn(
-          'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs',
-          'text-[var(--text-muted)] hover:text-[var(--text-secondary)]',
-          'hover:bg-[var(--bg-hover)] transition-colors',
-        )}>
+        <button
+          className={cn(
+            'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs',
+            'text-[var(--text-muted)] hover:text-[var(--text-secondary)]',
+            'hover:bg-[var(--bg-hover)] transition-colors',
+          )}
+        >
           <Wrench size={12} className="flex-shrink-0" />
           <span>{t('rightPanel.toolCount', { count: totalTools })}</span>
         </button>
@@ -60,5 +64,5 @@ export default function ToolsCatalog({ groups, onToolSelect }: ToolsCatalogProps
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

@@ -4,20 +4,43 @@
   "description": "OpenClaw desktop client with structured task management",
   "scripts": {
     "postinstall": "node scripts/ensure-electron.mjs",
+    "prepare": "husky",
     "dev": "pnpm --filter @clawwork/desktop dev",
     "build": "pnpm -r build",
-    "typecheck": "packages/desktop/node_modules/.bin/tsc -b packages/shared/tsconfig.json && packages/desktop/node_modules/.bin/tsc --noEmit -p packages/desktop/tsconfig.json",
-    "lint": "pnpm -r lint",
+    "typecheck": "pnpm --filter @clawwork/shared exec tsc -b && pnpm --filter @clawwork/desktop exec tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "pnpm -r test",
     "test:e2e": "playwright test --config=e2e/playwright.config.ts",
     "test:e2e:smoke": "playwright test --config=e2e/playwright.config.ts --project=smoke",
-    "test:e2e:gateway": "playwright test --config=e2e/playwright.config.ts --project=gateway"
+    "test:e2e:gateway": "playwright test --config=e2e/playwright.config.ts --project=gateway",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,mts,cts,js,mjs,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,yaml,yml,md,css,html}": [
+      "prettier --write"
+    ]
   },
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2"
+    "@eslint/js": "^9.0.0",
+    "@playwright/test": "^1.58.2",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^10.0.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "globals": "^16.0.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^16.0.0",
+    "prettier": "^3.0.0",
+    "typescript-eslint": "^8.0.0"
   }
 }

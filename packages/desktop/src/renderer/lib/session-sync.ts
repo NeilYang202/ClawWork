@@ -32,7 +32,9 @@ export async function hydrateFromLocal(): Promise<void> {
         }));
         bulkLoad(t.id, msgs);
       }
-    } catch { /* skip failed loads */ }
+    } catch {
+      /* skip failed loads */
+    }
   }
 }
 
@@ -61,37 +63,51 @@ export async function syncFromGateway(): Promise<void> {
       });
       if (d.messages.length === 0) continue;
       if (messagesByTask[d.taskId]?.length) continue;
-      const msgs: Message[] = d.messages.map((m: {
-        role: string;
-        content: string;
-        timestamp: string;
-        toolCalls?: { id: string; name: string; status: string; args?: Record<string, unknown>; result?: string; startedAt: string; completedAt?: string }[];
-      }) => ({
-        id: crypto.randomUUID(),
-        taskId: d.taskId,
-        role: m.role as MessageRole,
-        content: m.content,
-        artifacts: [],
-        toolCalls: (m.toolCalls ?? []).map((tc): ToolCall => ({
-          id: tc.id,
-          name: tc.name,
-          status: tc.status as ToolCall['status'],
-          args: tc.args,
-          result: tc.result,
-          startedAt: tc.startedAt,
-          completedAt: tc.completedAt,
-        })),
-        timestamp: m.timestamp,
-      }));
+      const msgs: Message[] = d.messages.map(
+        (m: {
+          role: string;
+          content: string;
+          timestamp: string;
+          toolCalls?: {
+            id: string;
+            name: string;
+            status: string;
+            args?: Record<string, unknown>;
+            result?: string;
+            startedAt: string;
+            completedAt?: string;
+          }[];
+        }) => ({
+          id: crypto.randomUUID(),
+          taskId: d.taskId,
+          role: m.role as MessageRole,
+          content: m.content,
+          artifacts: [],
+          toolCalls: (m.toolCalls ?? []).map(
+            (tc): ToolCall => ({
+              id: tc.id,
+              name: tc.name,
+              status: tc.status as ToolCall['status'],
+              args: tc.args,
+              result: tc.result,
+              startedAt: tc.startedAt,
+              completedAt: tc.completedAt,
+            }),
+          ),
+          timestamp: m.timestamp,
+        }),
+      );
       bulkLoad(d.taskId, msgs);
       for (const msg of msgs) {
-        window.clawwork.persistMessage({
-          id: msg.id,
-          taskId: msg.taskId,
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.timestamp,
-        }).catch(() => {});
+        window.clawwork
+          .persistMessage({
+            id: msg.id,
+            taskId: msg.taskId,
+            role: msg.role,
+            content: msg.content,
+            timestamp: msg.timestamp,
+          })
+          .catch(() => {});
       }
     }
   } catch {

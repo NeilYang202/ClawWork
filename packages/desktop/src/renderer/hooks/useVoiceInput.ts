@@ -4,9 +4,19 @@ import {
   resolveVoicePressAction,
   shouldHandleVoiceHotkey,
 } from '@/lib/voice/voice-input-utils';
-import type { CreateVoiceSessionHandlers, VoiceErrorCode, VoicePermissionStatus, VoiceSession } from '@/lib/voice/types';
+import type {
+  CreateVoiceSessionHandlers,
+  VoiceErrorCode,
+  VoicePermissionStatus,
+  VoiceSession,
+} from '@/lib/voice/types';
 
-export type { CreateVoiceSessionHandlers, VoiceErrorCode, VoicePermissionStatus, VoiceSession } from '@/lib/voice/types';
+export type {
+  CreateVoiceSessionHandlers,
+  VoiceErrorCode,
+  VoicePermissionStatus,
+  VoiceSession,
+} from '@/lib/voice/types';
 
 interface UseVoiceInputOptions {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
@@ -116,23 +126,26 @@ export function useVoiceInput({
     }
   }, [clearHoldTimer, releaseSession, clearListeningState]);
 
-  const insertIntoTextarea = useCallback((transcript: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+  const insertIntoTextarea = useCallback(
+    (transcript: string) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
 
-    const result = insertTranscriptAtCaret({
-      value: textarea.value,
-      selectionStart: textarea.selectionStart ?? textarea.value.length,
-      selectionEnd: textarea.selectionEnd ?? textarea.value.length,
-      transcript,
-    });
+      const result = insertTranscriptAtCaret({
+        value: textarea.value,
+        selectionStart: textarea.selectionStart ?? textarea.value.length,
+        selectionEnd: textarea.selectionEnd ?? textarea.value.length,
+        transcript,
+      });
 
-    textarea.value = result.value;
-    textarea.setSelectionRange(result.selectionStart, result.selectionEnd);
-    textarea.focus();
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-    onTextInserted?.();
-  }, [textareaRef, onTextInserted]);
+      textarea.value = result.value;
+      textarea.setSelectionRange(result.selectionStart, result.selectionEnd);
+      textarea.focus();
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      onTextInserted?.();
+    },
+    [textareaRef, onTextInserted],
+  );
 
   const insertLiteralSpace = useCallback(() => {
     const textarea = textareaRef.current;
@@ -148,66 +161,65 @@ export function useVoiceInput({
     onTextInserted?.();
   }, [textareaRef, onTextInserted]);
 
-  const beginListening = useCallback(async (requiresActivePress: boolean) => {
-    if (!isSupported) {
-      setErrorCode('unsupported');
-      return;
-    }
+  const beginListening = useCallback(
+    async (requiresActivePress: boolean) => {
+      if (!isSupported) {
+        setErrorCode('unsupported');
+        return;
+      }
 
-    setErrorCode(null);
-    const requestId = startRequestIdRef.current + 1;
-    startRequestIdRef.current = requestId;
+      setErrorCode(null);
+      const requestId = startRequestIdRef.current + 1;
+      startRequestIdRef.current = requestId;
 
-    const permissionStatus = await requestPermission();
+      const permissionStatus = await requestPermission();
 
-    if (startRequestIdRef.current !== requestId) return;
-    if (requiresActivePress && !pressActiveRef.current) return;
+      if (startRequestIdRef.current !== requestId) return;
+      if (requiresActivePress && !pressActiveRef.current) return;
 
-    if (permissionStatus !== 'granted') {
-      setErrorCode(
-        permissionStatus === 'unsupported'
-          ? 'unsupported'
-          : 'permission-denied',
-      );
-      clearListeningState();
-      return;
-    }
-
-    const session = createSession({
-      onInterimResult: (text) => {
-        setInterimTranscript(text);
-      },
-      onFinalResult: (text) => {
-        setInterimTranscript('');
-        setIsTranscribing(false);
-        insertIntoTextarea(text);
-      },
-      onError: (code) => {
-        setErrorCode(code);
-        setIsTranscribing(false);
-        releaseSession(false);
+      if (permissionStatus !== 'granted') {
+        setErrorCode(permissionStatus === 'unsupported' ? 'unsupported' : 'permission-denied');
         clearListeningState();
-      },
-      onEnd: () => {
-        setIsTranscribing(false);
-        releaseSession(false);
+        return;
+      }
+
+      const session = createSession({
+        onInterimResult: (text) => {
+          setInterimTranscript(text);
+        },
+        onFinalResult: (text) => {
+          setInterimTranscript('');
+          setIsTranscribing(false);
+          insertIntoTextarea(text);
+        },
+        onError: (code) => {
+          setErrorCode(code);
+          setIsTranscribing(false);
+          releaseSession(false);
+          clearListeningState();
+        },
+        onEnd: () => {
+          setIsTranscribing(false);
+          releaseSession(false);
+          clearListeningState();
+        },
+      });
+
+      if (!session) {
+        setErrorCode('unsupported');
         clearListeningState();
-      },
-    });
+        return;
+      }
 
-    if (!session) {
-      setErrorCode('unsupported');
-      clearListeningState();
-      return;
-    }
-
-    sessionRef.current = session;
-    session.start();
-    startedFromCurrentPressRef.current = requiresActivePress;
-    setInterimTranscript('');
-    setIsListening(true);
-    isListeningRef.current = true;
-  }, [isSupported, requestPermission, createSession, insertIntoTextarea, releaseSession, clearListeningState]);
+      sessionRef.current = session;
+      session.start();
+      startedFromCurrentPressRef.current = requiresActivePress;
+      setInterimTranscript('');
+      setIsListening(true);
+      isListeningRef.current = true;
+    },
+    [isSupported, requestPermission, createSession, insertIntoTextarea, releaseSession, clearListeningState],
+  );
 
   const handleLongPress = useCallback(() => {
     clearHoldTimer();
@@ -218,54 +230,62 @@ export function useVoiceInput({
     void beginListening(true);
   }, [clearHoldTimer, beginListening]);
 
-  const handleKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === ' ' && pressActiveRef.current) {
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLTextAreaElement>) => {
+      if (event.key === ' ' && pressActiveRef.current) {
+        event.preventDefault();
+        return;
+      }
+      if (!isSupported) return;
+      if (
+        !shouldHandleVoiceHotkey({
+          key: event.key,
+          repeat: event.repeat,
+          altKey: event.altKey,
+          ctrlKey: event.ctrlKey,
+          metaKey: event.metaKey,
+          shiftKey: event.shiftKey,
+          isComposing: event.nativeEvent.isComposing,
+          hasActiveTask,
+          mainView,
+          settingsOpen,
+        })
+      ) {
+        return;
+      }
+
       event.preventDefault();
-      return;
-    }
-    if (!isSupported) return;
-    if (!shouldHandleVoiceHotkey({
-      key: event.key,
-      repeat: event.repeat,
-      altKey: event.altKey,
-      ctrlKey: event.ctrlKey,
-      metaKey: event.metaKey,
-      shiftKey: event.shiftKey,
-      isComposing: event.nativeEvent.isComposing,
-      hasActiveTask,
-      mainView,
-      settingsOpen,
-    })) {
-      return;
-    }
+      clearHoldTimer();
+      pressActiveRef.current = true;
+      pressStartedAtRef.current = Date.now();
+      startedFromCurrentPressRef.current = false;
+      holdTimerRef.current = window.setTimeout(handleLongPress, pressHoldDelayMs);
+    },
+    [hasActiveTask, isSupported, mainView, settingsOpen, clearHoldTimer, handleLongPress, pressHoldDelayMs],
+  );
 
-    event.preventDefault();
-    clearHoldTimer();
-    pressActiveRef.current = true;
-    pressStartedAtRef.current = Date.now();
-    startedFromCurrentPressRef.current = false;
-    holdTimerRef.current = window.setTimeout(handleLongPress, pressHoldDelayMs);
-  }, [hasActiveTask, isSupported, mainView, settingsOpen, clearHoldTimer, handleLongPress, pressHoldDelayMs]);
+  const handleKeyUp = useCallback(
+    (event: KeyboardEvent<HTMLTextAreaElement>) => {
+      if (event.key !== ' ') return;
+      if (pressStartedAtRef.current == null) return;
 
-  const handleKeyUp = useCallback((event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key !== ' ') return;
-    if (pressStartedAtRef.current == null) return;
+      event.preventDefault();
+      const pressDuration = Date.now() - pressStartedAtRef.current;
+      pressStartedAtRef.current = null;
+      pressActiveRef.current = false;
+      clearHoldTimer();
 
-    event.preventDefault();
-    const pressDuration = Date.now() - pressStartedAtRef.current;
-    pressStartedAtRef.current = null;
-    pressActiveRef.current = false;
-    clearHoldTimer();
+      if (isListeningRef.current || startedFromCurrentPressRef.current) {
+        stopListening();
+        return;
+      }
 
-    if (isListeningRef.current || startedFromCurrentPressRef.current) {
-      stopListening();
-      return;
-    }
-
-    if (resolveVoicePressAction(pressDuration, pressHoldDelayMs) === 'insert-space') {
-      insertLiteralSpace();
-    }
-  }, [clearHoldTimer, insertLiteralSpace, pressHoldDelayMs, stopListening]);
+      if (resolveVoicePressAction(pressDuration, pressHoldDelayMs) === 'insert-space') {
+        insertLiteralSpace();
+      }
+    },
+    [clearHoldTimer, insertLiteralSpace, pressHoldDelayMs, stopListening],
+  );
 
   const confirmIntro = useCallback(async () => {
     await markIntroSeen();

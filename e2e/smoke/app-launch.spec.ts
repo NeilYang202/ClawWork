@@ -49,9 +49,7 @@ test.describe('Layer 1: Smoke Tests', () => {
     const apiType = await page.evaluate(() => typeof (window as Record<string, unknown>).clawwork);
     expect(apiType).toBe('object');
 
-    const methods = await page.evaluate(() =>
-      Object.keys((window as Record<string, unknown>).clawwork as object),
-    );
+    const methods = await page.evaluate(() => Object.keys((window as Record<string, unknown>).clawwork as object));
     expect(methods).toContain('sendMessage');
     expect(methods).toContain('gatewayStatus');
     expect(methods).toContain('listGateways');

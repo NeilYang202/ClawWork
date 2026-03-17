@@ -18,10 +18,13 @@ export const useApprovalStore = create<{
     set((s) => ({ pendingApprovals: [...s.pendingApprovals, { ...req, gatewayId }] }));
     const ttl = req.expiresAtMs - Date.now();
     if (ttl > 0) {
-      expireTimers.set(req.id, setTimeout(() => {
-        expireTimers.delete(req.id);
-        get().removeApproval(req.id);
-      }, ttl));
+      expireTimers.set(
+        req.id,
+        setTimeout(() => {
+          expireTimers.delete(req.id);
+          get().removeApproval(req.id);
+        }, ttl),
+      );
     }
   },
 

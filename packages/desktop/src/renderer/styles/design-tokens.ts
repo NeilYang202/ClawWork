@@ -46,7 +46,7 @@ export const colors = {
     400: '#60A5FA',
     500: '#3B82F6',
   },
-} as const
+} as const;
 
 export const spacing = {
   0: '0px',
@@ -64,7 +64,7 @@ export const spacing = {
   16: '64px',
   20: '80px',
   24: '96px',
-} as const
+} as const;
 
 export const radius = {
   none: '0px',
@@ -74,7 +74,7 @@ export const radius = {
   xl: '12px',
   '2xl': '16px',
   full: '9999px',
-} as const
+} as const;
 
 export const typography = {
   fontFamily: {
@@ -97,14 +97,14 @@ export const typography = {
     semibold: '600',
     bold: '700',
   },
-} as const
+} as const;
 
 export const shadows = {
   sm: '0 1px 2px rgba(0, 0, 0, 0.3)',
   md: '0 2px 8px rgba(0, 0, 0, 0.4)',
   lg: '0 4px 16px rgba(0, 0, 0, 0.5)',
   xl: '0 8px 32px rgba(0, 0, 0, 0.6)',
-} as const
+} as const;
 
 export const transitions = {
   duration: {
@@ -119,7 +119,7 @@ export const transitions = {
     exit: 'cubic-bezier(0.4, 0, 1, 1)',
     spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
   },
-} as const
+} as const;
 
 export const motion = {
   fadeIn: {
@@ -150,4 +150,4 @@ export const motion = {
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.15 },
   },
-} as const
+} as const;

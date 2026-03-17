@@ -25,19 +25,60 @@ describe('adHocSignApp', () => {
     expect(execSync).toHaveBeenCalledTimes(14);
 
     const commands = execSync.mock.calls.map(([command]) => command);
-    expect(commands[0]).toContain(path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libEGL.dylib'));
-    expect(commands[1]).toContain(path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libGLESv2.dylib'));
-    expect(commands[2]).toContain(path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libffmpeg.dylib'));
-    expect(commands[3]).toContain(path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libvk_swiftshader.dylib'));
-    expect(commands[4]).toContain(path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Helpers/chrome_crashpad_handler'));
-    expect(commands[5]).toContain(path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/Electron Framework.framework'));
-    expect(commands[6]).toContain(path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/Mantle.framework'));
-    expect(commands[7]).toContain(path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/ReactiveObjC.framework'));
-    expect(commands[8]).toContain(path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/Squirrel.framework'));
-    expect(commands[9]).toContain(path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/ClawWork Helper.app'));
-    expect(commands[10]).toContain(path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/ClawWork Helper (GPU).app'));
-    expect(commands[11]).toContain(path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/ClawWork Helper (Plugin).app'));
-    expect(commands[12]).toContain(path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/ClawWork Helper (Renderer).app'));
+    expect(commands[0]).toContain(
+      path.join(
+        '/tmp/dist/mac-universal',
+        'ClawWork.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libEGL.dylib',
+      ),
+    );
+    expect(commands[1]).toContain(
+      path.join(
+        '/tmp/dist/mac-universal',
+        'ClawWork.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libGLESv2.dylib',
+      ),
+    );
+    expect(commands[2]).toContain(
+      path.join(
+        '/tmp/dist/mac-universal',
+        'ClawWork.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libffmpeg.dylib',
+      ),
+    );
+    expect(commands[3]).toContain(
+      path.join(
+        '/tmp/dist/mac-universal',
+        'ClawWork.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libvk_swiftshader.dylib',
+      ),
+    );
+    expect(commands[4]).toContain(
+      path.join(
+        '/tmp/dist/mac-universal',
+        'ClawWork.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Helpers/chrome_crashpad_handler',
+      ),
+    );
+    expect(commands[5]).toContain(
+      path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/Electron Framework.framework'),
+    );
+    expect(commands[6]).toContain(
+      path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/Mantle.framework'),
+    );
+    expect(commands[7]).toContain(
+      path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/ReactiveObjC.framework'),
+    );
+    expect(commands[8]).toContain(
+      path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/Squirrel.framework'),
+    );
+    expect(commands[9]).toContain(
+      path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/ClawWork Helper.app'),
+    );
+    expect(commands[10]).toContain(
+      path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/ClawWork Helper (GPU).app'),
+    );
+    expect(commands[11]).toContain(
+      path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/ClawWork Helper (Plugin).app'),
+    );
+    expect(commands[12]).toContain(
+      path.join('/tmp/dist/mac-universal', 'ClawWork.app/Contents/Frameworks/ClawWork Helper (Renderer).app'),
+    );
     expect(commands[13]).toContain(path.join('/tmp/dist/mac-universal', 'ClawWork.app'));
 
     for (const command of commands) {

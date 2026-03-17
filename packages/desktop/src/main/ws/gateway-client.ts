@@ -122,7 +122,8 @@ export class GatewayClient {
 
     this.ws.on('close', (code, reason) => {
       const reasonStr = reason.toString();
-      const error = this.lastError ?? (code === WS_CLOSE_POLICY_VIOLATION ? reasonStr || 'policy violation' : undefined);
+      const error =
+        this.lastError ?? (code === WS_CLOSE_POLICY_VIOLATION ? reasonStr || 'policy violation' : undefined);
       getDebugLogger().warn({
         domain: 'gateway',
         event: 'gateway.ws.close',
@@ -202,10 +203,7 @@ export class GatewayClient {
 
   private handleEvent(frame: { event: string; payload: Record<string, unknown>; seq?: number }): void {
     if (frame.event === 'connect.challenge') {
-      const nonce =
-        frame.payload && typeof frame.payload.nonce === 'string'
-          ? frame.payload.nonce.trim()
-          : '';
+      const nonce = frame.payload && typeof frame.payload.nonce === 'string' ? frame.payload.nonce.trim() : '';
       if (!nonce) {
         getDebugLogger().error({
           domain: 'gateway',
@@ -238,7 +236,7 @@ export class GatewayClient {
     }
 
     const sessionKey = typeof frame.payload.sessionKey === 'string' ? frame.payload.sessionKey : undefined;
-    const taskId = sessionKey ? parseTaskIdFromSessionKey(sessionKey) ?? undefined : undefined;
+    const taskId = sessionKey ? (parseTaskIdFromSessionKey(sessionKey) ?? undefined) : undefined;
     getDebugLogger().debug({
       domain: 'gateway',
       event: `gateway.${frame.event.replace(/[^a-z0-9]+/gi, '.').toLowerCase()}`,
@@ -688,8 +686,7 @@ export class GatewayClient {
         if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
           this.ws.close();
         }
-      } catch {
-      }
+      } catch {}
       this.ws = null;
     }
     this.authenticated = false;

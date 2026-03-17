@@ -1,23 +1,17 @@
-import { useTranslation } from 'react-i18next'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
-import { groupCommandsByCategory, CATEGORY_I18N_KEYS, type SlashCommand } from '@/lib/slash-commands'
+import { useTranslation } from 'react-i18next';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { groupCommandsByCategory, CATEGORY_I18N_KEYS, type SlashCommand } from '@/lib/slash-commands';
 
 interface SlashCommandDashboardProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSelectCommand?: (cmd: SlashCommand) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSelectCommand?: (cmd: SlashCommand) => void;
 }
 
-const groups = groupCommandsByCategory()
+const groups = groupCommandsByCategory();
 
 export default function SlashCommandDashboard({ open, onOpenChange, onSelectCommand }: SlashCommandDashboardProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -40,8 +34,8 @@ export default function SlashCommandDashboard({ open, onOpenChange, onSelectComm
                     type="button"
                     className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors"
                     onClick={() => {
-                      onSelectCommand?.(cmd)
-                      onOpenChange(false)
+                      onSelectCommand?.(cmd);
+                      onOpenChange(false);
                     }}
                   >
                     <span className="shrink-0 font-mono text-sm text-[var(--accent)]">/{cmd.name}</span>
@@ -57,5 +51,5 @@ export default function SlashCommandDashboard({ open, onOpenChange, onSelectComm
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -29,25 +29,50 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Type check (shared)
-        run: pnpm --filter @clawwork/desktop exec tsc -b ../../packages/shared/tsconfig.json
+      - name: Lint
+        run: pnpm lint
 
-      - name: Type check (desktop)
-        run: pnpm --filter @clawwork/desktop exec tsc --noEmit
+      - name: Format check
+        run: pnpm format:check
+
+  test:
+    needs: [quality]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm typecheck
 
       - name: Run tests
-        run: pnpm --filter @clawwork/desktop test
+        run: pnpm test
 
   build:
+    needs: [quality]
     strategy:
       matrix:
         include:
           - os: macos-latest
             platform: mac
-            build_args: "--mac --arm64"
+            build_args: '--mac --arm64'
           - os: windows-latest
             platform: win
-            build_args: "--win --x64"
+            build_args: '--win --x64'
 
     runs-on: ${{ matrix.os }}
 

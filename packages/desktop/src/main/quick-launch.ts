@@ -72,10 +72,7 @@ export function showQuickLaunch(): void {
   const { x: sx, y: sy } = display.workArea;
   const { width: sw, height: sh } = display.workAreaSize;
 
-  win.setPosition(
-    Math.round(sx + (sw - WINDOW_WIDTH) / 2),
-    Math.round(sy + sh * 0.75),
-  );
+  win.setPosition(Math.round(sx + (sw - WINDOW_WIDTH) / 2), Math.round(sy + sh * 0.75));
 
   win.show();
   win.focus();

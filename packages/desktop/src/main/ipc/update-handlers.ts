@@ -26,16 +26,15 @@ export function registerUpdateHandlers(): void {
     const currentVersion = app.getVersion();
 
     try {
-      const resp = await net.fetch(
-        'https://api.github.com/repos/clawwork-ai/clawwork/releases/latest',
-        { headers: { 'User-Agent': `ClawWork/${currentVersion}` } },
-      );
+      const resp = await net.fetch('https://api.github.com/repos/clawwork-ai/clawwork/releases/latest', {
+        headers: { 'User-Agent': `ClawWork/${currentVersion}` },
+      });
 
       if (!resp.ok) {
         return { currentVersion, latestVersion: currentVersion, hasUpdate: false, releaseUrl: '' };
       }
 
-      const data = await resp.json() as ReleaseInfo;
+      const data = (await resp.json()) as ReleaseInfo;
       const latestVersion = data.tag_name.replace(/^v/, '');
       const releaseUrl = data.html_url;
 

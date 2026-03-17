@@ -85,7 +85,10 @@ describe('registerSettingsHandlers', () => {
     const handler = handleMap.get('settings:test-gateway');
     expect(handler).toBeTypeOf('function');
 
-    const pending = handler?.({}, 'wss://gateway.example.com', { token: 'secret' }) as Promise<{ ok: boolean; error: string }>;
+    const pending = handler?.({}, 'wss://gateway.example.com', { token: 'secret' }) as Promise<{
+      ok: boolean;
+      error: string;
+    }>;
 
     await vi.advanceTimersByTimeAsync(10_000);
 

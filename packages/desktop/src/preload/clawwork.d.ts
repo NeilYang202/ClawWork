@@ -167,7 +167,12 @@ interface ChatAttachment {
 
 export interface ClawWorkAPI {
   // Chat — all require gatewayId
-  sendMessage: (gatewayId: string, sessionKey: string, content: string, attachments?: ChatAttachment[]) => Promise<IpcResult>;
+  sendMessage: (
+    gatewayId: string,
+    sessionKey: string,
+    content: string,
+    attachments?: ChatAttachment[],
+  ) => Promise<IpcResult>;
   chatHistory: (gatewayId: string, sessionKey: string, limit?: number) => Promise<IpcResult>;
   listSessions: (gatewayId: string) => Promise<IpcResult>;
   abortChat: (gatewayId: string, sessionKey: string) => Promise<IpcResult>;
@@ -184,11 +189,22 @@ export interface ClawWorkAPI {
   listGateways: () => Promise<GatewayListItem[]>;
 
   // Push events from main process
-  onGatewayEvent: (callback: (data: GatewayEvent) => void) => (() => void);
-  onGatewayStatus: (callback: (status: GatewayStatusEvent) => void) => (() => void);
-  onDebugEvent: (callback: (event: DebugEvent) => void) => (() => void);
-  exportDebugBundle: (filter?: { gatewayId?: string; sessionKey?: string; taskId?: string; limit?: number }) => Promise<{ ok: boolean; path?: string; eventCount?: number; error?: string }>;
-  reportDebugEvent: (event: { domain: string; event: string; traceId?: string; feature?: string; data?: Record<string, unknown> }) => void;
+  onGatewayEvent: (callback: (data: GatewayEvent) => void) => () => void;
+  onGatewayStatus: (callback: (status: GatewayStatusEvent) => void) => () => void;
+  onDebugEvent: (callback: (event: DebugEvent) => void) => () => void;
+  exportDebugBundle: (filter?: {
+    gatewayId?: string;
+    sessionKey?: string;
+    taskId?: string;
+    limit?: number;
+  }) => Promise<{ ok: boolean; path?: string; eventCount?: number; error?: string }>;
+  reportDebugEvent: (event: {
+    domain: string;
+    event: string;
+    traceId?: string;
+    feature?: string;
+    data?: Record<string, unknown>;
+  }) => void;
   removeAllListeners: (channel: string) => void;
 
   // Data persistence
@@ -220,7 +236,12 @@ export interface ClawWorkAPI {
   updateSettings: (partial: Partial<AppSettings>) => Promise<{ ok: boolean; config: AppSettings }>;
   getMicrophonePermission: () => Promise<{ status: VoicePermissionStatus }>;
   requestMicrophonePermission: () => Promise<{ status: VoicePermissionStatus }>;
-  checkWhisper: () => Promise<{ available: boolean; binaryPath: string | null; modelPath: string | null; error?: string }>;
+  checkWhisper: () => Promise<{
+    available: boolean;
+    binaryPath: string | null;
+    modelPath: string | null;
+    error?: string;
+  }>;
   transcribeAudio: (audio: ArrayBuffer) => Promise<{ ok: boolean; transcript?: string; error?: string }>;
 
   // Gateway management
@@ -270,13 +291,20 @@ export interface ClawWorkAPI {
   }) => Promise<IpcResult>;
 
   persistMessage: (msg: {
-    id: string; taskId: string; role: string; content: string; timestamp: string;
+    id: string;
+    taskId: string;
+    role: string;
+    content: string;
+    timestamp: string;
   }) => Promise<IpcResult>;
 
   deleteTask: (taskId: string) => Promise<IpcResult>;
 
   getUsageStatus: (gatewayId: string) => Promise<IpcResult>;
-  getUsageCost: (gatewayId: string, params?: { startDate?: string; endDate?: string; days?: number }) => Promise<IpcResult>;
+  getUsageCost: (
+    gatewayId: string,
+    params?: { startDate?: string; endDate?: string; days?: number },
+  ) => Promise<IpcResult>;
   getSessionUsage: (gatewayId: string, sessionKey: string) => Promise<IpcResult>;
 
   resolveExecApproval: (gatewayId: string, id: string, decision: string) => Promise<IpcResult>;
@@ -291,8 +319,8 @@ export interface ClawWorkAPI {
   ) => void;
   getTrayEnabled: () => Promise<boolean>;
   setTrayEnabled: (enabled: boolean) => Promise<boolean>;
-  onTrayNavigateTask: (callback: (taskId: string) => void) => (() => void);
-  onTrayOpenSettings: (callback: () => void) => (() => void);
+  onTrayNavigateTask: (callback: (taskId: string) => void) => () => void;
+  onTrayOpenSettings: (callback: () => void) => () => void;
 
   selectContextFolder: () => Promise<IpcResult>;
   listContextFiles: (folders: string[], query?: string) => Promise<IpcResult>;
@@ -302,7 +330,7 @@ export interface ClawWorkAPI {
   quickLaunchHide: () => void;
   getQuickLaunchConfig: () => Promise<QuickLaunchConfigResult>;
   updateQuickLaunchConfig: (enabled: boolean, shortcut?: string) => Promise<boolean>;
-  onQuickLaunchSubmit: (callback: (message: string) => void) => (() => void);
+  onQuickLaunchSubmit: (callback: (message: string) => void) => () => void;
 }
 
 declare global {

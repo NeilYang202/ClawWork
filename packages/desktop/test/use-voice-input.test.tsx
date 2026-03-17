@@ -21,24 +21,26 @@ function createFakeSessionFactory(): {
 } {
   let lastSession: FakeSession | null = null;
 
-  const createSession = vi.fn((handlers: {
-    onInterimResult: (text: string) => void;
-    onFinalResult: (text: string) => void;
-    onError: (code: string) => void;
-    onEnd: () => void;
-  }) => {
-    lastSession = {
-      start: vi.fn(),
-      stop: vi.fn(),
-      destroy: vi.fn(),
-      emitInterim: (text: string) => handlers.onInterimResult(text),
-      emitFinal: (text: string) => handlers.onFinalResult(text),
-      emitError: (code: string) => handlers.onError(code),
-      emitEnd: () => handlers.onEnd(),
-    };
+  const createSession = vi.fn(
+    (handlers: {
+      onInterimResult: (text: string) => void;
+      onFinalResult: (text: string) => void;
+      onError: (code: string) => void;
+      onEnd: () => void;
+    }) => {
+      lastSession = {
+        start: vi.fn(),
+        stop: vi.fn(),
+        destroy: vi.fn(),
+        emitInterim: (text: string) => handlers.onInterimResult(text),
+        emitFinal: (text: string) => handlers.onFinalResult(text),
+        emitError: (code: string) => handlers.onError(code),
+        emitEnd: () => handlers.onEnd(),
+      };
 
-    return lastSession;
-  });
+      return lastSession;
+    },
+  );
 
   return {
     createSession,

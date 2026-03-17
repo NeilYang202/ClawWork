@@ -2,9 +2,7 @@ import type { CreateVoiceSessionHandlers, VoiceSession } from '@/lib/voice/types
 
 const TARGET_SAMPLE_RATE = 16000;
 
-export function createWhisperSttSession(
-  handlers: CreateVoiceSessionHandlers,
-): VoiceSession | null {
+export function createWhisperSttSession(handlers: CreateVoiceSessionHandlers): VoiceSession | null {
   if (!navigator.mediaDevices?.getUserMedia) return null;
 
   let stream: MediaStream | null = null;

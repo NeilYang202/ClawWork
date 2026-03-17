@@ -68,18 +68,24 @@ test.describe('Layer 2: Gateway Integration', () => {
   });
 
   test('G2: gateway status reflected in renderer', async () => {
-    const status = await page.evaluate(([gwId]) => {
-      return window.clawwork.gatewayStatus().then((s) => s[gwId]);
-    }, [GATEWAY_ID] as const);
+    const status = await page.evaluate(
+      ([gwId]) => {
+        return window.clawwork.gatewayStatus().then((s) => s[gwId]);
+      },
+      [GATEWAY_ID] as const,
+    );
 
     expect(status?.error).toBeUndefined();
     expect(status?.connected).toBe(true);
   });
 
   test('G3: list sessions via gateway', async () => {
-    const result = await page.evaluate(([gwId]) => {
-      return window.clawwork.listSessions(gwId);
-    }, [GATEWAY_ID] as const);
+    const result = await page.evaluate(
+      ([gwId]) => {
+        return window.clawwork.listSessions(gwId);
+      },
+      [GATEWAY_ID] as const,
+    );
 
     expect(result.ok).toBe(true);
   });
@@ -100,17 +106,17 @@ test.describe('Layer 2: Gateway Integration', () => {
   test('G5: chat history returns after send', async () => {
     const sessionKey = buildSessionKey();
 
-    await page.evaluate(
-      ([gwId, sk]) => window.clawwork.sendMessage(gwId, sk, 'e2e history test'),
-      [GATEWAY_ID, sessionKey] as const,
-    );
+    await page.evaluate(([gwId, sk]) => window.clawwork.sendMessage(gwId, sk, 'e2e history test'), [
+      GATEWAY_ID,
+      sessionKey,
+    ] as const);
 
     await page.waitForTimeout(1000);
 
-    const result = await page.evaluate(
-      ([gwId, sk]) => window.clawwork.chatHistory(gwId, sk),
-      [GATEWAY_ID, sessionKey] as const,
-    );
+    const result = await page.evaluate(([gwId, sk]) => window.clawwork.chatHistory(gwId, sk), [
+      GATEWAY_ID,
+      sessionKey,
+    ] as const);
 
     expect(result.ok).toBe(true);
   });
@@ -156,10 +162,7 @@ test.describe('Layer 2: Gateway Integration', () => {
 
     const [h1, h2] = await page.evaluate(
       ([gwId, s1, s2]) => {
-        return Promise.all([
-          window.clawwork.chatHistory(gwId, s1),
-          window.clawwork.chatHistory(gwId, s2),
-        ]);
+        return Promise.all([window.clawwork.chatHistory(gwId, s1), window.clawwork.chatHistory(gwId, s2)]);
       },
       [GATEWAY_ID, sk1, sk2] as const,
     );
@@ -169,19 +172,25 @@ test.describe('Layer 2: Gateway Integration', () => {
   });
 
   test('A1: wrong token is rejected', async () => {
-    const result = await page.evaluate(([url]) => {
-      return window.clawwork.testGateway(url, {
-        token: 'wrong-token-xxx',
-      });
-    }, [GATEWAY_WS_URL] as const);
+    const result = await page.evaluate(
+      ([url]) => {
+        return window.clawwork.testGateway(url, {
+          token: 'wrong-token-xxx',
+        });
+      },
+      [GATEWAY_WS_URL] as const,
+    );
 
     expect(result.ok).toBe(false);
   });
 
   test('A2: empty token is rejected', async () => {
-    const result = await page.evaluate(([url]) => {
-      return window.clawwork.testGateway(url, {});
-    }, [GATEWAY_WS_URL] as const);
+    const result = await page.evaluate(
+      ([url]) => {
+        return window.clawwork.testGateway(url, {});
+      },
+      [GATEWAY_WS_URL] as const,
+    );
 
     expect(result.ok).toBe(false);
   });

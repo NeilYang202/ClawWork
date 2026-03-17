@@ -24,20 +24,31 @@ function isMarkdown(mime: string, name: string): boolean {
 }
 
 function isCode(mime: string): boolean {
-  const codeMimes = [
-    'text/typescript', 'text/javascript', 'application/json',
-    'text/html', 'text/css', 'text/plain',
-  ];
+  const codeMimes = ['text/typescript', 'text/javascript', 'application/json', 'text/html', 'text/css', 'text/plain'];
   return codeMimes.includes(mime);
 }
 
 function langFromName(name: string): string {
   const ext = name.slice(name.lastIndexOf('.') + 1);
   const map: Record<string, string> = {
-    ts: 'typescript', tsx: 'typescript', js: 'javascript', jsx: 'javascript',
-    json: 'json', html: 'html', css: 'css', sql: 'sql',
-    py: 'python', rb: 'ruby', go: 'go', rs: 'rust', java: 'java',
-    sh: 'bash', yaml: 'yaml', yml: 'yaml', xml: 'xml', toml: 'toml',
+    ts: 'typescript',
+    tsx: 'typescript',
+    js: 'javascript',
+    jsx: 'javascript',
+    json: 'json',
+    html: 'html',
+    css: 'css',
+    sql: 'sql',
+    py: 'python',
+    rb: 'ruby',
+    go: 'go',
+    rs: 'rust',
+    java: 'java',
+    sh: 'bash',
+    yaml: 'yaml',
+    yml: 'yaml',
+    xml: 'xml',
+    toml: 'toml',
   };
   return map[ext] ?? '';
 }
@@ -67,13 +78,11 @@ export default function FilePreview({ artifact, onClose, onNavigateToTask }: Fil
 
   return (
     <motion.div className="flex flex-col h-full" {...motionPresets.slideIn}>
-      <header className={cn(
-        'flex items-center justify-between px-4 h-11 border-b border-[var(--border)] flex-shrink-0',
-      )}>
+      <header
+        className={cn('flex items-center justify-between px-4 h-11 border-b border-[var(--border)] flex-shrink-0')}
+      >
         <div className="flex items-center gap-2 min-w-0">
-          <h3 className="text-sm font-medium text-[var(--text-primary)] truncate">
-            {artifact.name}
-          </h3>
+          <h3 className="text-sm font-medium text-[var(--text-primary)] truncate">{artifact.name}</h3>
           <Button
             variant="ghost"
             size="icon-sm"
@@ -95,16 +104,9 @@ export default function FilePreview({ artifact, onClose, onNavigateToTask }: Fil
               <Loader2 size={20} className="animate-spin text-[var(--text-muted)]" />
             </div>
           )}
-          {error && (
-            <p className="text-sm text-[var(--danger)] text-center py-8">{error}</p>
-          )}
+          {error && <p className="text-sm text-[var(--danger)] text-center py-8">{error}</p>}
           {!loading && !error && content !== null && (
-            <PreviewContent
-              content={content}
-              encoding={encoding}
-              mimeType={artifact.mimeType}
-              name={artifact.name}
-            />
+            <PreviewContent content={content} encoding={encoding} mimeType={artifact.mimeType} name={artifact.name} />
           )}
         </div>
       </ScrollArea>
@@ -112,7 +114,12 @@ export default function FilePreview({ artifact, onClose, onNavigateToTask }: Fil
   );
 }
 
-function PreviewContent({ content, encoding, mimeType, name }: {
+function PreviewContent({
+  content,
+  encoding,
+  mimeType,
+  name,
+}: {
   content: string;
   encoding: string;
   mimeType: string;
@@ -151,11 +158,7 @@ function PreviewContent({ content, encoding, mimeType, name }: {
   }
 
   if (encoding === 'utf-8') {
-    return (
-      <pre className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap break-words">
-        {content}
-      </pre>
-    );
+    return <pre className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap break-words">{content}</pre>;
   }
 
   return (

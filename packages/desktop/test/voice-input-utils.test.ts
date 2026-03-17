@@ -85,85 +85,97 @@ describe('insertTranscriptAtCaret', () => {
 
 describe('shouldHandleVoiceHotkey', () => {
   it('allows space on chat view when there is an active task and no blockers', () => {
-    expect(shouldHandleVoiceHotkey({
-      key: ' ',
-      repeat: false,
-      altKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
-      isComposing: false,
-      hasActiveTask: true,
-      mainView: 'chat',
-      settingsOpen: false,
-    })).toBe(true);
+    expect(
+      shouldHandleVoiceHotkey({
+        key: ' ',
+        repeat: false,
+        altKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        shiftKey: false,
+        isComposing: false,
+        hasActiveTask: true,
+        mainView: 'chat',
+        settingsOpen: false,
+      }),
+    ).toBe(true);
   });
 
   it('rejects the hotkey when view or modifier state makes it unsafe', () => {
-    expect(shouldHandleVoiceHotkey({
-      key: ' ',
-      repeat: false,
-      altKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
-      isComposing: false,
-      hasActiveTask: true,
-      mainView: 'files',
-      settingsOpen: false,
-    })).toBe(false);
+    expect(
+      shouldHandleVoiceHotkey({
+        key: ' ',
+        repeat: false,
+        altKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        shiftKey: false,
+        isComposing: false,
+        hasActiveTask: true,
+        mainView: 'files',
+        settingsOpen: false,
+      }),
+    ).toBe(false);
 
-    expect(shouldHandleVoiceHotkey({
-      key: ' ',
-      repeat: false,
-      altKey: false,
-      ctrlKey: false,
-      metaKey: true,
-      shiftKey: false,
-      isComposing: false,
-      hasActiveTask: true,
-      mainView: 'chat',
-      settingsOpen: false,
-    })).toBe(false);
+    expect(
+      shouldHandleVoiceHotkey({
+        key: ' ',
+        repeat: false,
+        altKey: false,
+        ctrlKey: false,
+        metaKey: true,
+        shiftKey: false,
+        isComposing: false,
+        hasActiveTask: true,
+        mainView: 'chat',
+        settingsOpen: false,
+      }),
+    ).toBe(false);
 
-    expect(shouldHandleVoiceHotkey({
-      key: ' ',
-      repeat: false,
-      altKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
-      isComposing: true,
-      hasActiveTask: true,
-      mainView: 'chat',
-      settingsOpen: false,
-    })).toBe(false);
+    expect(
+      shouldHandleVoiceHotkey({
+        key: ' ',
+        repeat: false,
+        altKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        shiftKey: false,
+        isComposing: true,
+        hasActiveTask: true,
+        mainView: 'chat',
+        settingsOpen: false,
+      }),
+    ).toBe(false);
 
-    expect(shouldHandleVoiceHotkey({
-      key: ' ',
-      repeat: true,
-      altKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
-      isComposing: false,
-      hasActiveTask: true,
-      mainView: 'chat',
-      settingsOpen: false,
-    })).toBe(false);
+    expect(
+      shouldHandleVoiceHotkey({
+        key: ' ',
+        repeat: true,
+        altKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        shiftKey: false,
+        isComposing: false,
+        hasActiveTask: true,
+        mainView: 'chat',
+        settingsOpen: false,
+      }),
+    ).toBe(false);
 
-    expect(shouldHandleVoiceHotkey({
-      key: 'Enter',
-      repeat: false,
-      altKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
-      isComposing: false,
-      hasActiveTask: true,
-      mainView: 'chat',
-      settingsOpen: false,
-    })).toBe(false);
+    expect(
+      shouldHandleVoiceHotkey({
+        key: 'Enter',
+        repeat: false,
+        altKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        shiftKey: false,
+        isComposing: false,
+        hasActiveTask: true,
+        mainView: 'chat',
+        settingsOpen: false,
+      }),
+    ).toBe(false);
   });
 });
 

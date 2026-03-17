@@ -21,29 +21,42 @@ function tierIcon(tier: string, size: number) {
   return <File size={size} className="text-[var(--text-muted)]" />;
 }
 
-export default function FilePicker({ visible, query, folders, selectedIndex, onSelect, onHoverIndex, onClose, onItemsChange, onAddFolder }: FilePickerProps) {
+export default function FilePicker({
+  visible,
+  query,
+  folders,
+  selectedIndex,
+  onSelect,
+  onHoverIndex,
+  onClose: _onClose,
+  onItemsChange,
+  onAddFolder,
+}: FilePickerProps) {
   const [files, setFiles] = useState<FileIndexEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const reqIdRef = useRef(0);
 
-  const fetchFiles = useCallback(async (q: string, flds: string[]) => {
-    const id = ++reqIdRef.current;
-    setLoading(true);
-    try {
-      const res = await window.clawwork.listContextFiles(flds, q || undefined);
-      if (id !== reqIdRef.current) return;
-      if (res.ok && Array.isArray(res.result)) {
-        const items = res.result as FileIndexEntry[];
-        setFiles(items);
-        onItemsChange?.(items);
+  const fetchFiles = useCallback(
+    async (q: string, flds: string[]) => {
+      const id = ++reqIdRef.current;
+      setLoading(true);
+      try {
+        const res = await window.clawwork.listContextFiles(flds, q || undefined);
+        if (id !== reqIdRef.current) return;
+        if (res.ok && Array.isArray(res.result)) {
+          const items = res.result as FileIndexEntry[];
+          setFiles(items);
+          onItemsChange?.(items);
+        }
+      } catch {
+        if (id === reqIdRef.current) setFiles([]);
       }
-    } catch {
-      if (id === reqIdRef.current) setFiles([]);
-    }
-    if (id === reqIdRef.current) setLoading(false);
-  }, [onItemsChange]);
+      if (id === reqIdRef.current) setLoading(false);
+    },
+    [onItemsChange],
+  );
 
   useEffect(() => {
     if (!visible) return;
@@ -54,7 +67,9 @@ export default function FilePicker({ visible, query, folders, selectedIndex, onS
     }
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchFiles(query, folders), 150);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [visible, query, folders, fetchFiles, onItemsChange]);
 
   useEffect(() => {
@@ -67,11 +82,13 @@ export default function FilePicker({ visible, query, folders, selectedIndex, onS
 
   if (folders.length === 0) {
     return (
-      <div className={cn(
-        'absolute bottom-full left-0 right-0 mb-2 z-50',
-        'bg-[var(--bg-elevated)] border border-[var(--border-subtle)]',
-        'rounded-xl shadow-[var(--shadow-elevated)] p-4',
-      )}>
+      <div
+        className={cn(
+          'absolute bottom-full left-0 right-0 mb-2 z-50',
+          'bg-[var(--bg-elevated)] border border-[var(--border-subtle)]',
+          'rounded-xl shadow-[var(--shadow-elevated)] p-4',
+        )}
+      >
         <div className="flex flex-col items-center gap-2 text-center">
           <AlertCircle size={20} className="text-[var(--text-muted)]" />
           <p className="text-sm text-[var(--text-secondary)]">No context folders added</p>
@@ -92,11 +109,13 @@ export default function FilePicker({ visible, query, folders, selectedIndex, onS
   }
 
   return (
-    <div className={cn(
-      'absolute bottom-full left-0 right-0 mb-2 z-50',
-      'bg-[var(--bg-elevated)] border border-[var(--border-subtle)]',
-      'rounded-xl shadow-[var(--shadow-elevated)] overflow-hidden',
-    )}>
+    <div
+      className={cn(
+        'absolute bottom-full left-0 right-0 mb-2 z-50',
+        'bg-[var(--bg-elevated)] border border-[var(--border-subtle)]',
+        'rounded-xl shadow-[var(--shadow-elevated)] overflow-hidden',
+      )}
+    >
       <div ref={listRef} className="max-h-64 overflow-y-auto py-1">
         {loading && files.length === 0 && (
           <div className="px-3 py-4 text-center text-xs text-[var(--text-muted)]">Scanning files...</div>

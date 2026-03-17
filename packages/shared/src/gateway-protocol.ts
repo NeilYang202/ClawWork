@@ -25,14 +25,9 @@ export interface GatewayEventFrame {
   payload: Record<string, unknown>;
 }
 
-export type GatewayFrame =
-  | GatewayReqFrame
-  | GatewayResFrame
-  | GatewayEventFrame;
+export type GatewayFrame = GatewayReqFrame | GatewayResFrame | GatewayEventFrame;
 
-export type GatewayAuth =
-  | { token: string; deviceToken?: string }
-  | { password: string; deviceToken?: string };
+export type GatewayAuth = { token: string; deviceToken?: string } | { password: string; deviceToken?: string };
 
 export interface GatewayConnectParams {
   minProtocol: 3;

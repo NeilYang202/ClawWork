@@ -25,7 +25,7 @@
 
 ---
 
-A Client for [OpenClaw](https://github.com/openclaw/openclaw) — Connect ClawWork to your own OpenClaw and unlock ***10x*** multi-session productivity.
+A Client for [OpenClaw](https://github.com/openclaw/openclaw) — Connect ClawWork to your own OpenClaw and unlock **_10x_** multi-session productivity.
 
 ## Features
 
@@ -77,15 +77,15 @@ sudo xattr -rd com.apple.quarantine "/Applications/ClawWork.app"
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Electron 34, electron-vite 3 |
-| Frontend | React 19, TypeScript 5, Tailwind CSS v4 |
-| UI Components | shadcn/ui (Radix UI + cva) |
-| Animation | Framer Motion |
-| State | Zustand 5 |
-| Database | better-sqlite3 + Drizzle ORM |
-| Git | simple-git |
+| Layer         | Technology                              |
+| ------------- | --------------------------------------- |
+| Framework     | Electron 34, electron-vite 3            |
+| Frontend      | React 19, TypeScript 5, Tailwind CSS v4 |
+| UI Components | shadcn/ui (Radix UI + cva)              |
+| Animation     | Framer Motion                           |
+| State         | Zustand 5                               |
+| Database      | better-sqlite3 + Drizzle ORM            |
+| Git           | simple-git                              |
 
 ## Project Structure
 

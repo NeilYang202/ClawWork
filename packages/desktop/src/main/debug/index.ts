@@ -3,7 +3,7 @@ import type { DebugEvent } from '@clawwork/shared';
 import type { DebugLogger } from './logger.js';
 import { createDebugLogger } from './logger.js';
 
-const noop = (): DebugEvent => ({ ts: '', level: 'debug', domain: 'app', event: '' } as DebugEvent);
+const noop = (): DebugEvent => ({ ts: '', level: 'debug', domain: 'app', event: '' }) as DebugEvent;
 let debugLogger: DebugLogger = {
   debug: noop,
   info: noop,

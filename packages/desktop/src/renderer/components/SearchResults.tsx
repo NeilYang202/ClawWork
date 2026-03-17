@@ -1,73 +1,67 @@
-import { motion } from 'framer-motion'
-import { MessageSquare, FileText, FolderOpen } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { cn } from '@/lib/utils'
+import { motion } from 'framer-motion';
+import { MessageSquare, FileText, FolderOpen } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 export interface SearchResult {
-  type: 'task' | 'message' | 'artifact'
-  id: string
-  title: string
-  snippet: string
-  taskId?: string
+  type: 'task' | 'message' | 'artifact';
+  id: string;
+  title: string;
+  snippet: string;
+  taskId?: string;
 }
 
 interface SearchResultsProps {
-  results: SearchResult[]
-  onSelect: (result: SearchResult) => void
+  results: SearchResult[];
+  onSelect: (result: SearchResult) => void;
 }
 
 const ICON_MAP = {
   task: FolderOpen,
   message: MessageSquare,
   artifact: FileText,
-} as const
+} as const;
 
 const LABEL_KEYS = {
   task: 'search.tasks',
   message: 'search.messages',
   artifact: 'search.files',
-} as const
+} as const;
 
 const listItem = {
   initial: { opacity: 0, y: 4 },
   animate: { opacity: 1, y: 0 },
   transition: { duration: 0.15 },
-}
+};
 
 function highlightSnippet(text: string): React.ReactNode[] {
-  const parts = text.split(/(<<.*?>>)/g)
+  const parts = text.split(/(<<.*?>>)/g);
   return parts.map((part, i) => {
     if (part.startsWith('<<') && part.endsWith('>>')) {
       return (
         <span key={i} className="text-[var(--accent)] font-medium">
           {part.slice(2, -2)}
         </span>
-      )
+      );
     }
-    return part
-  })
+    return part;
+  });
 }
 
 export default function SearchResults({ results, onSelect }: SearchResultsProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   const grouped = {
     task: results.filter((r) => r.type === 'task'),
     message: results.filter((r) => r.type === 'message'),
     artifact: results.filter((r) => r.type === 'artifact'),
-  }
+  };
 
-  const sections = (['task', 'message', 'artifact'] as const).filter(
-    (type) => grouped[type].length > 0,
-  )
+  const sections = (['task', 'message', 'artifact'] as const).filter((type) => grouped[type].length > 0);
 
   if (sections.length === 0) {
-    return (
-      <div className="px-4 py-6 text-center text-sm text-[var(--text-muted)]">
-        {t('search.noResults')}
-      </div>
-    )
+    return <div className="px-4 py-6 text-center text-sm text-[var(--text-muted)]">{t('search.noResults')}</div>;
   }
 
   return (
@@ -79,7 +73,7 @@ export default function SearchResults({ results, onSelect }: SearchResultsProps)
               {t(LABEL_KEYS[type])} ({grouped[type].length})
             </p>
             {grouped[type].map((result, idx) => {
-              const Icon = ICON_MAP[result.type]
+              const Icon = ICON_MAP[result.type];
               return (
                 <motion.button
                   key={result.id}
@@ -92,24 +86,19 @@ export default function SearchResults({ results, onSelect }: SearchResultsProps)
                     'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--ring-accent)]',
                   )}
                 >
-                  <Icon
-                    size={15}
-                    className="mt-0.5 flex-shrink-0 text-[var(--text-muted)]"
-                  />
+                  <Icon size={15} className="mt-0.5 flex-shrink-0 text-[var(--text-muted)]" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-[var(--text-primary)] truncate">
-                      {result.title || t('common.noTitle')}
-                    </p>
+                    <p className="text-sm text-[var(--text-primary)] truncate">{result.title || t('common.noTitle')}</p>
                     <p className="text-xs text-[var(--text-secondary)] truncate mt-0.5">
                       {highlightSnippet(result.snippet)}
                     </p>
                   </div>
                 </motion.button>
-              )
+              );
             })}
           </div>
         ))}
       </div>
     </ScrollArea>
-  )
+  );
 }

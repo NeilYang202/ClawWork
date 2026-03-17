@@ -1,44 +1,44 @@
-import { type ClassValue, clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
-import i18n from '../i18n'
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import i18n from '../i18n';
 
 export function cn(...inputs: ClassValue[]): string {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
   ['day', 86_400_000],
   ['hour', 3_600_000],
   ['minute', 60_000],
-]
+];
 
 function getRtf(): Intl.RelativeTimeFormat {
-  const locale = i18n.language === 'zh' ? 'zh-CN' : 'en'
-  return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
+  const locale = i18n.language === 'zh' ? 'zh-CN' : 'en';
+  return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
 }
 
 export function formatRelativeTime(date: Date): string {
-  const diff = date.getTime() - Date.now()
-  const rtf = getRtf()
+  const diff = date.getTime() - Date.now();
+  const rtf = getRtf();
   for (const [unit, ms] of UNITS) {
     if (Math.abs(diff) >= ms) {
-      return rtf.format(Math.round(diff / ms), unit)
+      return rtf.format(Math.round(diff / ms), unit);
     }
   }
-  return i18n.t('common.justNow')
+  return i18n.t('common.justNow');
 }
 
 export function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function formatTokenCount(tokens: number): string {
-  if (tokens < 1_000) return String(tokens)
-  if (tokens < 1_000_000) return `${(tokens / 1_000).toFixed(tokens < 100_000 ? 1 : 0)}K`
-  if (tokens < 1_000_000_000) return `${(tokens / 1_000_000).toFixed(tokens < 100_000_000 ? 1 : 0)}M`
-  return `${(tokens / 1_000_000_000).toFixed(1)}B`
+  if (tokens < 1_000) return String(tokens);
+  if (tokens < 1_000_000) return `${(tokens / 1_000).toFixed(tokens < 100_000 ? 1 : 0)}K`;
+  if (tokens < 1_000_000_000) return `${(tokens / 1_000_000).toFixed(tokens < 100_000_000 ? 1 : 0)}M`;
+  return `${(tokens / 1_000_000_000).toFixed(1)}B`;
 }
 
 export function formatCost(usd: number): string {
@@ -48,6 +48,6 @@ export function formatCost(usd: number): string {
   return `$${usd.toFixed(2)}`;
 }
 
-export const isMac = navigator.platform.toUpperCase().includes('MAC')
+export const isMac = navigator.platform.toUpperCase().includes('MAC');
 
-export const modKey = isMac ? '⌘' : 'Ctrl'
+export const modKey = isMac ? '⌘' : 'Ctrl';

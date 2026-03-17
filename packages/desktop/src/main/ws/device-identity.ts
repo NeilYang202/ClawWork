@@ -216,12 +216,7 @@ function writeTokenStore(store: DeviceTokenStore): void {
   fs.writeFileSync(storePath, `${JSON.stringify(store, null, 2)}\n`, { mode: 0o600 });
 }
 
-export function saveDeviceToken(
-  gatewayId: string,
-  token: string,
-  role: string,
-  issuedAtMs: number,
-): void {
+export function saveDeviceToken(gatewayId: string, token: string, role: string, issuedAtMs: number): void {
   const store = readTokenStore();
   store.tokens[gatewayId] = { token, role, issuedAtMs };
   writeTokenStore(store);

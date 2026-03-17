@@ -1,0 +1,7 @@
+dist/
+out/
+coverage/
+pnpm-lock.yaml
+*.db
+playwright-report/
+test-results/

@@ -1,5 +1,5 @@
-import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
+import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -7,19 +7,24 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/components/ui/dialog';
 
 interface VoiceIntroDialogProps {
-  open: boolean
-  onConfirm: () => Promise<void> | void
-  onCancel: () => void
+  open: boolean;
+  onConfirm: () => Promise<void> | void;
+  onCancel: () => void;
 }
 
 export default function VoiceIntroDialog({ open, onConfirm, onCancel }: VoiceIntroDialogProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onCancel() }}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onCancel();
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('voiceInput.introTitle')}</DialogTitle>
@@ -44,5 +49,5 @@ export default function VoiceIntroDialog({ open, onConfirm, onCancel }: VoiceInt
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

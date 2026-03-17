@@ -1,7 +1,22 @@
 import { useRef, useCallback, useState, useEffect, useMemo, type KeyboardEvent, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Square, Paperclip, X, ChevronDown, Cpu, Brain, Mic, Loader2, TerminalSquare, Minimize2, RotateCcw, File, FolderPlus } from 'lucide-react';
+import {
+  Send,
+  Square,
+  Paperclip,
+  X,
+  ChevronDown,
+  Cpu,
+  Brain,
+  Mic,
+  Loader2,
+  TerminalSquare,
+  Minimize2,
+  RotateCcw,
+  File,
+  FolderPlus,
+} from 'lucide-react';
 import type { MessageImageAttachment, ModelCatalogEntry, ToolEntry, FileIndexEntry } from '@clawwork/shared';
 import { toast } from 'sonner';
 import { cn, modKey } from '@/lib/utils';
@@ -9,10 +24,14 @@ import { motion as motionPresets } from '@/styles/design-tokens';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
-  DropdownMenu, DropdownMenuTrigger,
-  DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuSub,
-  DropdownMenuSubTrigger, DropdownMenuSubContent,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { createWhisperSttSession } from '@/lib/voice/whisper-stt';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
@@ -26,7 +45,13 @@ import SlashArgPicker from './SlashArgPicker';
 import type { ArgOption } from './SlashArgPicker';
 import VoiceIntroDialog from './VoiceIntroDialog';
 import FilePicker from './FilePicker';
-import { filterSlashCommands, parseSlashQuery, getEnumOptions, hasArgPicker, type SlashCommand } from '@/lib/slash-commands';
+import {
+  filterSlashCommands,
+  parseSlashQuery,
+  getEnumOptions,
+  hasArgPicker,
+  type SlashCommand,
+} from '@/lib/slash-commands';
 
 interface PendingImage {
   file: File;
@@ -75,7 +100,7 @@ function readAsBase64(file: File): Promise<string> {
 }
 
 const THINKING_LEVELS = ['off', 'minimal', 'low', 'medium', 'high', 'adaptive'] as const;
-type ThinkingLevel = typeof THINKING_LEVELS[number];
+type ThinkingLevel = (typeof THINKING_LEVELS)[number];
 
 const THINKING_LABEL_KEYS: Record<ThinkingLevel, string> = {
   off: 'chatInput.thinkingOff',
@@ -131,9 +156,10 @@ export default function ChatInput() {
 
   const buildArgOptions = useCallback((cmd: SlashCommand): ArgOption[] => {
     if (cmd.pickerType === 'model') {
-      const gwId = useTaskStore.getState().tasks.find((t) => t.id === useTaskStore.getState().activeTaskId)?.gatewayId
-        ?? useTaskStore.getState().pendingNewTask?.gatewayId;
-      const catalog = gwId ? useUiStore.getState().modelCatalogByGateway[gwId] ?? [] : [];
+      const gwId =
+        useTaskStore.getState().tasks.find((t) => t.id === useTaskStore.getState().activeTaskId)?.gatewayId ??
+        useTaskStore.getState().pendingNewTask?.gatewayId;
+      const catalog = gwId ? (useUiStore.getState().modelCatalogByGateway[gwId] ?? []) : [];
       return catalog.map((m) => ({
         value: m.id,
         label: m.name ?? m.id,
@@ -145,49 +171,55 @@ export default function ChatInput() {
     return [];
   }, []);
 
-  const commitSlashCommand = useCallback((cmd: SlashCommand) => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    setSlashMenuVisible(false);
-    setSlashQuery('');
-    setSlashIndex(0);
+  const commitSlashCommand = useCallback(
+    (cmd: SlashCommand) => {
+      const ta = textareaRef.current;
+      if (!ta) return;
+      setSlashMenuVisible(false);
+      setSlashQuery('');
+      setSlashIndex(0);
 
-    if (hasArgPicker(cmd)) {
+      if (hasArgPicker(cmd)) {
+        const newValue = `/${cmd.name} `;
+        ta.value = newValue;
+        ta.style.height = 'auto';
+        ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
+        ta.setSelectionRange(newValue.length, newValue.length);
+        ta.focus();
+        setArgPickerCommand(cmd);
+        setArgPickerOptions(buildArgOptions(cmd));
+        setArgPickerIndex(0);
+        setArgPickerVisible(true);
+        return;
+      }
+
       const newValue = `/${cmd.name} `;
       ta.value = newValue;
       ta.style.height = 'auto';
       ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
       ta.setSelectionRange(newValue.length, newValue.length);
       ta.focus();
-      setArgPickerCommand(cmd);
-      setArgPickerOptions(buildArgOptions(cmd));
+    },
+    [buildArgOptions],
+  );
+
+  const commitArgOption = useCallback(
+    (opt: ArgOption) => {
+      const ta = textareaRef.current;
+      if (!ta || !argPickerCommand) return;
+      const newValue = `/${argPickerCommand.name} ${opt.value}`;
+      ta.value = newValue;
+      ta.style.height = 'auto';
+      ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
+      ta.setSelectionRange(newValue.length, newValue.length);
+      ta.focus();
+      setArgPickerVisible(false);
+      setArgPickerCommand(null);
+      setArgPickerOptions([]);
       setArgPickerIndex(0);
-      setArgPickerVisible(true);
-      return;
-    }
-
-    const newValue = `/${cmd.name} `;
-    ta.value = newValue;
-    ta.style.height = 'auto';
-    ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
-    ta.setSelectionRange(newValue.length, newValue.length);
-    ta.focus();
-  }, [buildArgOptions]);
-
-  const commitArgOption = useCallback((opt: ArgOption) => {
-    const ta = textareaRef.current;
-    if (!ta || !argPickerCommand) return;
-    const newValue = `/${argPickerCommand.name} ${opt.value}`;
-    ta.value = newValue;
-    ta.style.height = 'auto';
-    ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
-    ta.setSelectionRange(newValue.length, newValue.length);
-    ta.focus();
-    setArgPickerVisible(false);
-    setArgPickerCommand(null);
-    setArgPickerOptions([]);
-    setArgPickerIndex(0);
-  }, [argPickerCommand]);
+    },
+    [argPickerCommand],
+  );
 
   const closeArgPicker = useCallback(() => {
     setArgPickerVisible(false);
@@ -197,13 +229,9 @@ export default function ChatInput() {
     textareaRef.current?.focus();
   }, []);
 
-  const activeTask = useTaskStore((s) =>
-    s.tasks.find((t) => t.id === s.activeTaskId),
-  );
+  const activeTask = useTaskStore((s) => s.tasks.find((t) => t.id === s.activeTaskId));
 
-  const isProcessing = useMessageStore((s) =>
-    activeTask ? s.processingTasks.has(activeTask.id) : false,
-  );
+  const isProcessing = useMessageStore((s) => (activeTask ? s.processingTasks.has(activeTask.id) : false));
   const isStreaming = useMessageStore((s) =>
     activeTask ? Boolean(s.streamingByTask[activeTask.id]) || Boolean(s.streamingThinkingByTask[activeTask.id]) : false,
   );
@@ -226,8 +254,10 @@ export default function ChatInput() {
   });
 
   const taskGwId = activeTask?.gatewayId ?? pendingNewTask?.gatewayId;
-  const modelCatalog = useUiStore((s) => (taskGwId ? s.modelCatalogByGateway[taskGwId] : undefined) ?? EMPTY_MODELS_CATALOG);
-  const toolsCatalog = useUiStore((s) => taskGwId ? s.toolsCatalogByGateway[taskGwId] : undefined);
+  const modelCatalog = useUiStore(
+    (s) => (taskGwId ? s.modelCatalogByGateway[taskGwId] : undefined) ?? EMPTY_MODELS_CATALOG,
+  );
+  const toolsCatalog = useUiStore((s) => (taskGwId ? s.toolsCatalogByGateway[taskGwId] : undefined));
   const currentModel = activeTask?.model === GATEWAY_INJECTED_MODEL ? undefined : activeTask?.model;
   const currentThinking = (activeTask?.thinkingLevel ?? 'off') as ThinkingLevel;
   const [whisperAvailable, setWhisperAvailable] = useState(false);
@@ -260,7 +290,7 @@ export default function ChatInput() {
     isListening: isVoiceListening,
     isTranscribing: isVoiceTranscribing,
     isIntroOpen: isVoiceIntroOpen,
-    interimTranscript,
+    interimTranscript: _interimTranscript,
     errorCode: voiceErrorCode,
     handleKeyDown: handleVoiceKeyDown,
     handleKeyUp: handleVoiceKeyUp,
@@ -314,21 +344,24 @@ export default function ChatInput() {
     }
   }, [activeTaskId]);
 
-  const handleRemoveContextFolder = useCallback((path: string) => {
-    setContextFolders((prev) => {
-      const next = prev.filter((f) => f !== path);
-      const key = activeTaskId ?? '';
-      foldersByTaskRef.current[key] = next;
-      return next;
-    });
-  }, [activeTaskId]);
+  const handleRemoveContextFolder = useCallback(
+    (path: string) => {
+      setContextFolders((prev) => {
+        const next = prev.filter((f) => f !== path);
+        const key = activeTaskId ?? '';
+        foldersByTaskRef.current[key] = next;
+        return next;
+      });
+    },
+    [activeTaskId],
+  );
 
   // Revoke blob URLs on cleanup
   useEffect(() => {
     return () => {
       pendingImages.forEach((img) => URL.revokeObjectURL(img.previewUrl));
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- cleanup only on unmount
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cleanup only on unmount
   }, []);
 
   const handleFileSelect = useCallback((e: ChangeEvent<HTMLInputElement>) => {
@@ -364,34 +397,37 @@ export default function ChatInput() {
     }
   }, []);
 
-  const commitFileSelection = useCallback((entry: FileIndexEntry) => {
-    const ta = textareaRef.current;
-    if (!ta) return;
+  const commitFileSelection = useCallback(
+    (entry: FileIndexEntry) => {
+      const ta = textareaRef.current;
+      if (!ta) return;
 
-    if (selectedFiles.some((f) => f.absolutePath === entry.absolutePath)) {
+      if (selectedFiles.some((f) => f.absolutePath === entry.absolutePath)) {
+        setFilePickerVisible(false);
+        return;
+      }
+
+      const pos = ta.selectionStart ?? 0;
+      const before = ta.value.slice(0, pos);
+      const after = ta.value.slice(pos);
+      const atStart = before.lastIndexOf('@');
+      if (atStart === -1) return;
+
+      const newBefore = before.slice(0, atStart);
+      ta.value = newBefore + after;
+      ta.style.height = 'auto';
+      ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
+      const newPos = newBefore.length;
+      ta.setSelectionRange(newPos, newPos);
+      ta.focus();
+
+      setSelectedFiles((prev) => [...prev, entry]);
       setFilePickerVisible(false);
-      return;
-    }
-
-    const pos = ta.selectionStart ?? 0;
-    const before = ta.value.slice(0, pos);
-    const after = ta.value.slice(pos);
-    const atStart = before.lastIndexOf('@');
-    if (atStart === -1) return;
-
-    const newBefore = before.slice(0, atStart);
-    ta.value = newBefore + after;
-    ta.style.height = 'auto';
-    ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
-    const newPos = newBefore.length;
-    ta.setSelectionRange(newPos, newPos);
-    ta.focus();
-
-    setSelectedFiles((prev) => [...prev, entry]);
-    setFilePickerVisible(false);
-    setFileQuery('');
-    setFilePickerIndex(0);
-  }, [selectedFiles]);
+      setFileQuery('');
+      setFilePickerIndex(0);
+    },
+    [selectedFiles],
+  );
 
   const removeSelectedFile = useCallback((absolutePath: string) => {
     setSelectedFiles((prev) => prev.filter((f) => f.absolutePath !== absolutePath));
@@ -423,7 +459,9 @@ export default function ChatInput() {
 
       if (files.length > 0) {
         const readResults = await Promise.all(
-          files.map((f) => window.clawwork.readContextFile(f.absolutePath, contextFolders).then((res) => ({ file: f, res }))),
+          files.map((f) =>
+            window.clawwork.readContextFile(f.absolutePath, contextFolders).then((res) => ({ file: f, res })),
+          ),
         );
 
         const textBlocks: string[] = [];
@@ -431,7 +469,13 @@ export default function ChatInput() {
 
         for (const { file: f, res } of readResults) {
           if (!res.ok || !res.result) continue;
-          const read = res.result as { content: string; mimeType: string; size: number; truncated: boolean; tier: string };
+          const read = res.result as {
+            content: string;
+            mimeType: string;
+            size: number;
+            truncated: boolean;
+            tier: string;
+          };
 
           if (read.tier === 'text') {
             const blockSize = new TextEncoder().encode(read.content).length;
@@ -463,17 +507,22 @@ export default function ChatInput() {
       setProcessing(task.id, true);
 
       if (!task.title) {
-        const titleSource = content || (files.length ? `[@${files[0].fileName}]` : '') || (images.length ? `[${t('chatInput.image')}]` : '');
+        const titleSource =
+          content ||
+          (files.length ? `[@${files[0].fileName}]` : '') ||
+          (images.length ? `[${t('chatInput.image')}]` : '');
         const title = titleSource.slice(0, 30).replace(/\n/g, ' ').trim();
         updateTaskTitle(task.id, title + (titleSource.length > 30 ? '\u2026' : ''));
       }
 
       const imageAttachments = images.length
-        ? await Promise.all(images.map(async (img) => ({
-            mimeType: img.file.type || 'image/png',
-            fileName: img.file.name,
-            content: await readAsBase64(img.file),
-          })))
+        ? await Promise.all(
+            images.map(async (img) => ({
+              mimeType: img.file.type || 'image/png',
+              fileName: img.file.name,
+              content: await readAsBase64(img.file),
+            })),
+          )
         : [];
       const allAttachments = [...imageAttachments, ...extraAttachments];
       const result = await window.clawwork.sendMessage(
@@ -494,46 +543,70 @@ export default function ChatInput() {
       addMessage(task.id, 'system', `${t('errors.sendFailed')}: ${msg}`);
       toast.error('Failed to send message', { description: msg });
     }
-  }, [activeTask, addMessage, setProcessing, updateTaskTitle, isOffline, pendingImages, selectedFiles, contextFolders, stopVoiceInput, commitPendingTask, t]);
+  }, [
+    activeTask,
+    addMessage,
+    setProcessing,
+    updateTaskTitle,
+    isOffline,
+    pendingImages,
+    selectedFiles,
+    contextFolders,
+    stopVoiceInput,
+    commitPendingTask,
+    t,
+  ]);
 
-  const handleModelQuickSend = useCallback((modelId: string) => {
-    const ta = textareaRef.current;
-    if (!ta || !activeTask) return;
-    updateTaskMetadata(activeTask.id, {
-      model: modelId,
-      modelProvider: modelCatalog.find((m) => m.id === modelId)?.provider,
-    });
-    ta.value = `/model ${modelId}`;
-    ta.style.height = 'auto';
-    ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
-    void handleSend();
-  }, [activeTask, handleSend, modelCatalog, updateTaskMetadata]);
+  const handleModelQuickSend = useCallback(
+    (modelId: string) => {
+      const ta = textareaRef.current;
+      if (!ta || !activeTask) return;
+      updateTaskMetadata(activeTask.id, {
+        model: modelId,
+        modelProvider: modelCatalog.find((m) => m.id === modelId)?.provider,
+      });
+      ta.value = `/model ${modelId}`;
+      ta.style.height = 'auto';
+      ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
+      void handleSend();
+    },
+    [activeTask, handleSend, modelCatalog, updateTaskMetadata],
+  );
 
-  const handleThinkingQuickSend = useCallback((level: ThinkingLevel) => {
-    const ta = textareaRef.current;
-    if (!ta || !activeTask) return;
-    ta.value = `/think ${level}`;
-    ta.style.height = 'auto';
-    ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
-    void handleSend();
-  }, [activeTask, handleSend]);
+  const handleThinkingQuickSend = useCallback(
+    (level: ThinkingLevel) => {
+      const ta = textareaRef.current;
+      if (!ta || !activeTask) return;
+      ta.value = `/think ${level}`;
+      ta.style.height = 'auto';
+      ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
+      void handleSend();
+    },
+    [activeTask, handleSend],
+  );
 
   const handleCompact = useCallback(() => {
     if (!activeTask || isOffline) return;
-    window.clawwork.compactSession(activeTask.gatewayId, activeTask.sessionKey).then((res) => {
-      if (res.ok) addMessage(activeTask.id, 'system', t('session.contextCompacted'));
-    }).catch(() => {});
+    window.clawwork
+      .compactSession(activeTask.gatewayId, activeTask.sessionKey)
+      .then((res) => {
+        if (res.ok) addMessage(activeTask.id, 'system', t('session.contextCompacted'));
+      })
+      .catch(() => {});
   }, [activeTask, isOffline, addMessage, t]);
 
   const handleReset = useCallback(() => {
     if (!activeTask || isOffline) return;
     const { clearMessages } = useMessageStore.getState();
-    window.clawwork.resetSession(activeTask.gatewayId, activeTask.sessionKey, 'reset').then((res) => {
-      if (res.ok) {
-        clearMessages(activeTask.id);
-        addMessage(activeTask.id, 'system', t('session.contextReset'));
-      }
-    }).catch(() => {});
+    window.clawwork
+      .resetSession(activeTask.gatewayId, activeTask.sessionKey, 'reset')
+      .then((res) => {
+        if (res.ok) {
+          clearMessages(activeTask.id);
+          addMessage(activeTask.id, 'system', t('session.contextReset'));
+        }
+      })
+      .catch(() => {});
   }, [activeTask, isOffline, addMessage, t]);
 
   const [aborting, setAborting] = useState(false);
@@ -655,14 +728,32 @@ export default function ChatInput() {
       if (e.key === 'Enter') {
         const isCmdEnterMode = sendShortcut === 'cmdEnter';
         const meta = e.metaKey || e.ctrlKey;
-        const shouldSend = isCmdEnterMode ? (meta && !e.shiftKey) : (!e.shiftKey && !meta);
+        const shouldSend = isCmdEnterMode ? meta && !e.shiftKey : !e.shiftKey && !meta;
         if (shouldSend) {
           e.preventDefault();
           handleSend();
         }
       }
     },
-    [filePickerVisible, filePickerIndex, commitFileSelection, argPickerVisible, argPickerOptions, argPickerIndex, commitArgOption, closeArgPicker, slashMenuVisible, slashCommands, slashIndex, commitSlashCommand, handleSend, handleAbort, isGenerating, handleVoiceKeyDown, sendShortcut],
+    [
+      filePickerVisible,
+      filePickerIndex,
+      commitFileSelection,
+      argPickerVisible,
+      argPickerOptions,
+      argPickerIndex,
+      commitArgOption,
+      closeArgPicker,
+      slashMenuVisible,
+      slashCommands,
+      slashIndex,
+      commitSlashCommand,
+      handleSend,
+      handleAbort,
+      isGenerating,
+      handleVoiceKeyDown,
+      sendShortcut,
+    ],
   );
 
   const handleInput = useCallback(() => {
@@ -698,12 +789,8 @@ export default function ChatInput() {
 
   const voiceActive = isVoiceListening || isVoiceTranscribing;
   const disabled = isOffline;
-  const placeholder = isOffline
-    ? t('chatInput.offlineReadOnly')
-    : t('chatInput.describeTask');
-  const voiceTooltip = !isVoiceSupported
-    ? t('voiceInput.unsupportedTooltip')
-    : t('voiceInput.tooltip');
+  const placeholder = isOffline ? t('chatInput.offlineReadOnly') : t('chatInput.describeTask');
+  const voiceTooltip = !isVoiceSupported ? t('voiceInput.unsupportedTooltip') : t('voiceInput.tooltip');
 
   const prevTranscribingRef = useRef(false);
   useEffect(() => {
@@ -778,15 +865,19 @@ export default function ChatInput() {
             {/* Model selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={cn(
-                  'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs',
-                  'text-[var(--text-muted)] hover:text-[var(--text-secondary)]',
-                  'hover:bg-[var(--bg-hover)] transition-colors',
-                )}>
+                <button
+                  className={cn(
+                    'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs',
+                    'text-[var(--text-muted)] hover:text-[var(--text-secondary)]',
+                    'hover:bg-[var(--bg-hover)] transition-colors',
+                  )}
+                >
                   <Cpu size={12} className="flex-shrink-0" />
                   <span className="max-w-[100px] truncate">{modelLabel}</span>
                   {currentModelEntry?.reasoning && (
-                    <span className="px-1 py-px rounded text-[9px] font-medium bg-[var(--accent)]/15 text-[var(--accent)]">R</span>
+                    <span className="px-1 py-px rounded text-[9px] font-medium bg-[var(--accent)]/15 text-[var(--accent)]">
+                      R
+                    </span>
                   )}
                   <ChevronDown size={10} className="opacity-50" />
                 </button>
@@ -806,7 +897,9 @@ export default function ChatInput() {
                         >
                           <span className="truncate">{m.name ?? m.id}</span>
                           {m.reasoning && (
-                            <span className="px-1 py-px rounded text-[9px] font-medium bg-[var(--accent)]/15 text-[var(--accent)]">R</span>
+                            <span className="px-1 py-px rounded text-[9px] font-medium bg-[var(--accent)]/15 text-[var(--accent)]">
+                              R
+                            </span>
                           )}
                         </DropdownMenuItem>
                       ))}
@@ -826,12 +919,14 @@ export default function ChatInput() {
             {/* Thinking level selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={cn(
-                  'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs',
-                  'text-[var(--text-muted)] hover:text-[var(--text-secondary)]',
-                  'hover:bg-[var(--bg-hover)] transition-colors',
-                  currentThinking !== 'off' && 'text-[var(--accent)]',
-                )}>
+                <button
+                  className={cn(
+                    'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs',
+                    'text-[var(--text-muted)] hover:text-[var(--text-secondary)]',
+                    'hover:bg-[var(--bg-hover)] transition-colors',
+                    currentThinking !== 'off' && 'text-[var(--accent)]',
+                  )}
+                >
                   <Brain size={12} className="flex-shrink-0" />
                   <span>{t(THINKING_LABEL_KEYS[currentThinking])}</span>
                   <ChevronDown size={10} className="opacity-50" />
@@ -931,7 +1026,9 @@ export default function ChatInput() {
             onSelect={commitFileSelection}
             onHoverIndex={setFilePickerIndex}
             onClose={() => setFilePickerVisible(false)}
-            onItemsChange={(items) => { filePickerItemsRef.current = items; }}
+            onItemsChange={(items) => {
+              filePickerItemsRef.current = items;
+            }}
             onAddFolder={handleAddContextFolder}
           />
 
@@ -946,14 +1043,16 @@ export default function ChatInput() {
             />
           )}
 
-          <div className={cn(
-            'flex items-end gap-2',
-            'bg-[var(--bg-elevated)] rounded-2xl p-3.5',
-            'border border-[var(--border-subtle)]',
-            'shadow-[var(--shadow-elevated)]',
-            'ring-accent-focus transition-all duration-200',
-            isOffline && 'opacity-60',
-          )}>
+          <div
+            className={cn(
+              'flex items-end gap-2',
+              'bg-[var(--bg-elevated)] rounded-2xl p-3.5',
+              'border border-[var(--border-subtle)]',
+              'shadow-[var(--shadow-elevated)]',
+              'ring-accent-focus transition-all duration-200',
+              isOffline && 'opacity-60',
+            )}
+          >
             {/* Hidden file input */}
             <input
               ref={fileInputRef}
@@ -1036,17 +1135,13 @@ export default function ChatInput() {
                           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--accent)] opacity-60" />
                           <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[var(--accent)]" />
                         </span>
-                        <span className="text-sm text-[var(--text-secondary)]">
-                          {t('voiceInput.listeningStatus')}
-                        </span>
+                        <span className="text-sm text-[var(--text-secondary)]">{t('voiceInput.listeningStatus')}</span>
                       </>
                     )}
                     {isVoiceTranscribing && (
                       <>
                         <Loader2 size={14} className="animate-spin text-[var(--accent)]" />
-                        <span className="text-sm text-[var(--text-secondary)]">
-                          {t('voiceInput.transcribing')}
-                        </span>
+                        <span className="text-sm text-[var(--text-secondary)]">{t('voiceInput.transcribing')}</span>
                       </>
                     )}
                   </motion.div>
@@ -1118,13 +1213,7 @@ export default function ChatInput() {
                   whileHover={motionPresets.scale.whileHover}
                   whileTap={motionPresets.scale.whileTap}
                 >
-                  <Button
-                    variant="soft"
-                    size="icon"
-                    onClick={handleSend}
-                    disabled={disabled}
-                    className="rounded-xl"
-                  >
+                  <Button variant="soft" size="icon" onClick={handleSend} disabled={disabled} className="rounded-xl">
                     <Send size={16} />
                   </Button>
                 </motion.div>
@@ -1176,11 +1265,7 @@ export default function ChatInput() {
           </p>
         </div>
       </div>
-      <VoiceIntroDialog
-        open={isVoiceIntroOpen}
-        onConfirm={confirmVoiceIntro}
-        onCancel={dismissVoiceIntro}
-      />
+      <VoiceIntroDialog open={isVoiceIntroOpen} onConfirm={confirmVoiceIntro} onCancel={dismissVoiceIntro} />
       <SlashCommandDashboard
         open={dashboardOpen}
         onOpenChange={setDashboardOpen}

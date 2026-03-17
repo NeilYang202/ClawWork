@@ -35,10 +35,7 @@ export function registerArtifactHandlers(): void {
       const sha = await commitArtifact(workspacePath, artifact.localPath);
       if (sha) {
         const db = getDb();
-        db.update(artifacts)
-          .set({ gitSha: sha })
-          .where(eq(artifacts.id, artifact.id))
-          .run();
+        db.update(artifacts).set({ gitSha: sha }).where(eq(artifacts.id, artifact.id)).run();
         artifact.gitSha = sha;
       }
 
@@ -101,9 +98,28 @@ export function registerArtifactHandlers(): void {
 }
 
 const TEXT_EXTS = new Set([
-  '.md', '.txt', '.ts', '.tsx', '.js', '.jsx', '.json',
-  '.html', '.css', '.sql', '.yaml', '.yml', '.xml', '.csv',
-  '.sh', '.py', '.rb', '.go', '.rs', '.java', '.toml', '.env',
+  '.md',
+  '.txt',
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.json',
+  '.html',
+  '.css',
+  '.sql',
+  '.yaml',
+  '.yml',
+  '.xml',
+  '.csv',
+  '.sh',
+  '.py',
+  '.rb',
+  '.go',
+  '.rs',
+  '.java',
+  '.toml',
+  '.env',
 ]);
 
 function isTextFile(localPath: string): boolean {

@@ -33,11 +33,7 @@ export default function SlashCommandMenu({
       {commands.length > 0 && (
         <>
           {/* Backdrop — clicking outside closes */}
-          <div
-            className="fixed inset-0 z-40"
-            onClick={onClose}
-            aria-hidden
-          />
+          <div className="fixed inset-0 z-40" onClick={onClose} aria-hidden />
           <motion.div
             role="listbox"
             aria-label="Slash commands"
@@ -75,24 +71,26 @@ export default function SlashCommandMenu({
                   }}
                 >
                   {/* Command name */}
-                  <span className="font-mono text-[13px] font-medium text-[var(--accent)] shrink-0">
-                    /{cmd.name}
-                  </span>
+                  <span className="font-mono text-[13px] font-medium text-[var(--accent)] shrink-0">/{cmd.name}</span>
                   {/* Description */}
                   <span className="text-xs truncate">{cmd.description}</span>
                   {/* Arg hint */}
                   {cmd.argHint && (
-                    <span className="ml-auto text-xs font-mono text-[var(--fg-muted)] shrink-0">
-                      {cmd.argHint}
-                    </span>
+                    <span className="ml-auto text-xs font-mono text-[var(--fg-muted)] shrink-0">{cmd.argHint}</span>
                   )}
                 </li>
               ))}
             </ul>
             <div className="px-4 py-1.5 border-t border-[var(--border-subtle)] flex gap-3 text-[10px] text-[var(--fg-muted)]">
-              <span><kbd className="font-mono">↑↓</kbd> navigate</span>
-              <span><kbd className="font-mono">↵</kbd> select</span>
-              <span><kbd className="font-mono">Esc</kbd> close</span>
+              <span>
+                <kbd className="font-mono">↑↓</kbd> navigate
+              </span>
+              <span>
+                <kbd className="font-mono">↵</kbd> select
+              </span>
+              <span>
+                <kbd className="font-mono">Esc</kbd> close
+              </span>
             </div>
           </motion.div>
         </>

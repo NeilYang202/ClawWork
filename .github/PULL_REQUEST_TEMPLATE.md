@@ -18,7 +18,7 @@ Explain the user problem, engineering problem, or follow-up this PR addresses.
 
 ## What changed?
 
-- 
+-
 
 ## Linked issues
 

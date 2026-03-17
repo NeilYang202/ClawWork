@@ -1,87 +1,102 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { PanelRightOpen, RotateCcw, Archive, Server, Bot, Cpu, ArrowUp, ArrowDown, ChevronRight, DollarSign, RefreshCw, AlertTriangle } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import type { ToolCall } from '@clawwork/shared'
-import { useTaskStore } from '@/stores/taskStore'
-import { useMessageStore, EMPTY_MESSAGES } from '@/stores/messageStore'
-import { useUiStore } from '@/stores/uiStore'
-import { cn, formatRelativeTime, formatTokenCount, formatCost } from '@/lib/utils'
-import { motion as motionPresets } from '@/styles/design-tokens'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
-import ChatMessage from '@/components/ChatMessage'
-import StreamingMessage from '@/components/StreamingMessage'
-import ThinkingIndicator from '@/components/ThinkingIndicator'
-import ChatInput from '@/components/ChatInput'
-import ImageLightbox from '@/components/ImageLightbox'
-import FilePreviewModal from '@/components/FilePreviewModal'
-import FileBrowser from '../FileBrowser'
-import logo from '@/assets/logo.png'
-import { useUsageStore } from '@/stores/usageStore'
-import { fetchAgentsForGateway } from '@/hooks/useGatewayDispatcher'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  PanelRightOpen,
+  RotateCcw,
+  Archive,
+  Server,
+  Bot,
+  Cpu,
+  ArrowUp,
+  ArrowDown,
+  ChevronRight,
+  DollarSign,
+  RefreshCw,
+  AlertTriangle,
+} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { ToolCall } from '@clawwork/shared';
+import { useTaskStore } from '@/stores/taskStore';
+import { useMessageStore, EMPTY_MESSAGES } from '@/stores/messageStore';
+import { useUiStore } from '@/stores/uiStore';
+import { cn, formatRelativeTime, formatTokenCount, formatCost } from '@/lib/utils';
+import { motion as motionPresets } from '@/styles/design-tokens';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import ChatMessage from '@/components/ChatMessage';
+import StreamingMessage from '@/components/StreamingMessage';
+import ThinkingIndicator from '@/components/ThinkingIndicator';
+import ChatInput from '@/components/ChatInput';
+import ImageLightbox from '@/components/ImageLightbox';
+import FilePreviewModal from '@/components/FilePreviewModal';
+import FileBrowser from '../FileBrowser';
+import logo from '@/assets/logo.png';
+import { useUsageStore } from '@/stores/usageStore';
+import { fetchAgentsForGateway } from '@/hooks/useGatewayDispatcher';
 
-const STICK_TO_BOTTOM_THRESHOLD_PX = 60
-const EMPTY_TOOL_CALLS: ToolCall[] = []
+const STICK_TO_BOTTOM_THRESHOLD_PX = 60;
+const EMPTY_TOOL_CALLS: ToolCall[] = [];
 
 interface MainAreaProps {
-  onTogglePanel: () => void
+  onTogglePanel: () => void;
 }
 
 function WelcomeScreen() {
-  const { t } = useTranslation()
-  const gatewayInfoMap = useUiStore((s) => s.gatewayInfoMap)
-  const defaultGatewayId = useUiStore((s) => s.defaultGatewayId)
-  const agentCatalogByGateway = useUiStore((s) => s.agentCatalogByGateway)
-  const pendingNewTask = useTaskStore((s) => s.pendingNewTask)
-  const gateways = useMemo(() => Object.values(gatewayInfoMap), [gatewayInfoMap])
-  const hasMultipleGw = gateways.length > 1
+  const { t } = useTranslation();
+  const gatewayInfoMap = useUiStore((s) => s.gatewayInfoMap);
+  const defaultGatewayId = useUiStore((s) => s.defaultGatewayId);
+  const agentCatalogByGateway = useUiStore((s) => s.agentCatalogByGateway);
+  const pendingNewTask = useTaskStore((s) => s.pendingNewTask);
+  const gateways = useMemo(() => Object.values(gatewayInfoMap), [gatewayInfoMap]);
+  const hasMultipleGw = gateways.length > 1;
 
-  const [selectedGwId, setSelectedGwId] = useState(pendingNewTask?.gatewayId ?? defaultGatewayId ?? gateways[0]?.id ?? '')
-  const [selectedAgentId, setSelectedAgentId] = useState(pendingNewTask?.agentId ?? 'main')
-  const [gwExpanded, setGwExpanded] = useState(false)
-  const [agentExpanded, setAgentExpanded] = useState(false)
+  const [selectedGwId, setSelectedGwId] = useState(
+    pendingNewTask?.gatewayId ?? defaultGatewayId ?? gateways[0]?.id ?? '',
+  );
+  const [selectedAgentId, setSelectedAgentId] = useState(pendingNewTask?.agentId ?? 'main');
+  const [gwExpanded, setGwExpanded] = useState(false);
+  const [agentExpanded, setAgentExpanded] = useState(false);
 
-  const gwAgents = agentCatalogByGateway[selectedGwId]
-  const agentCatalog = gwAgents?.agents ?? []
-  const hasMultipleAgents = agentCatalog.length > 1
+  const gwAgents = agentCatalogByGateway[selectedGwId];
+  const agentCatalog = gwAgents?.agents ?? [];
+  const hasMultipleAgents = agentCatalog.length > 1;
   useEffect(() => {
     if (!selectedGwId) {
-      const fallback = defaultGatewayId ?? gateways[0]?.id ?? ''
-      if (fallback) setSelectedGwId(fallback)
+      const fallback = defaultGatewayId ?? gateways[0]?.id ?? '';
+      if (fallback) setSelectedGwId(fallback);
     }
-  }, [defaultGatewayId, gateways, selectedGwId])
+  }, [defaultGatewayId, gateways, selectedGwId]);
 
   useEffect(() => {
     if (selectedGwId) {
-      fetchAgentsForGateway(selectedGwId)
+      fetchAgentsForGateway(selectedGwId);
     }
-  }, [selectedGwId])
+  }, [selectedGwId]);
 
   useEffect(() => {
     if (gwAgents) {
-      setSelectedAgentId(gwAgents.defaultId)
+      setSelectedAgentId(gwAgents.defaultId);
     } else {
-      setSelectedAgentId('main')
+      setSelectedAgentId('main');
     }
-  }, [gwAgents])
+  }, [gwAgents]);
 
   useEffect(() => {
-    const prev = useTaskStore.getState().pendingNewTask
-    if (prev?.gatewayId === selectedGwId && prev?.agentId === selectedAgentId) return
+    const prev = useTaskStore.getState().pendingNewTask;
+    if (prev?.gatewayId === selectedGwId && prev?.agentId === selectedAgentId) return;
     useTaskStore.setState({
       pendingNewTask: { gatewayId: selectedGwId, agentId: selectedAgentId },
-    })
-  }, [selectedGwId, selectedAgentId])
+    });
+  }, [selectedGwId, selectedAgentId]);
 
-  const MAX_VISIBLE = 3
+  const MAX_VISIBLE = 3;
 
-  const visibleGateways = gwExpanded ? gateways : gateways.slice(0, MAX_VISIBLE)
-  const hiddenGwCount = gateways.length - MAX_VISIBLE
-  const visibleAgents = agentExpanded ? agentCatalog : agentCatalog.slice(0, MAX_VISIBLE)
-  const hiddenAgentCount = agentCatalog.length - MAX_VISIBLE
+  const visibleGateways = gwExpanded ? gateways : gateways.slice(0, MAX_VISIBLE);
+  const hiddenGwCount = gateways.length - MAX_VISIBLE;
+  const visibleAgents = agentExpanded ? agentCatalog : agentCatalog.slice(0, MAX_VISIBLE);
+  const hiddenAgentCount = agentCatalog.length - MAX_VISIBLE;
 
   return (
     <motion.div
@@ -105,7 +120,10 @@ function WelcomeScreen() {
           {visibleGateways.map((gw) => (
             <button
               key={gw.id}
-              onClick={() => { setSelectedGwId(gw.id); setGwExpanded(false) }}
+              onClick={() => {
+                setSelectedGwId(gw.id);
+                setGwExpanded(false);
+              }}
               className={cn(
                 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer',
                 'border',
@@ -135,7 +153,10 @@ function WelcomeScreen() {
           {visibleAgents.map((agent) => (
             <button
               key={agent.id}
-              onClick={() => { setSelectedAgentId(agent.id); setAgentExpanded(false) }}
+              onClick={() => {
+                setSelectedAgentId(agent.id);
+                setAgentExpanded(false);
+              }}
               className={cn(
                 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer',
                 'border',
@@ -144,9 +165,11 @@ function WelcomeScreen() {
                   : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--text-muted)] hover:text-[var(--text-primary)]',
               )}
             >
-              {agent.identity?.emoji
-                ? <span className="text-sm leading-none">{agent.identity.emoji}</span>
-                : <Bot size={12} />}
+              {agent.identity?.emoji ? (
+                <span className="text-sm leading-none">{agent.identity.emoji}</span>
+              ) : (
+                <Bot size={12} />
+              )}
               <span className="max-w-[100px] truncate">{agent.name ?? agent.id}</span>
             </button>
           ))}
@@ -171,42 +194,44 @@ function WelcomeScreen() {
         {t('mainArea.starOnGithub')} ⭐
       </a>
     </motion.div>
-  )
+  );
 }
 
 function ChatHeader({ onTogglePanel }: { onTogglePanel: () => void }) {
-  const { t } = useTranslation()
-  const activeTask = useTaskStore((s) =>
-    s.tasks.find((task) => task.id === s.activeTaskId),
-  )
-  const gatewayInfoMap = useUiStore((s) => s.gatewayInfoMap)
-  const hasMultipleGateways = Object.keys(gatewayInfoMap).length > 1
-  const gwInfo = activeTask ? gatewayInfoMap[activeTask.gatewayId] : undefined
+  const { t } = useTranslation();
+  const activeTask = useTaskStore((s) => s.tasks.find((task) => task.id === s.activeTaskId));
+  const gatewayInfoMap = useUiStore((s) => s.gatewayInfoMap);
+  const hasMultipleGateways = Object.keys(gatewayInfoMap).length > 1;
+  const gwInfo = activeTask ? gatewayInfoMap[activeTask.gatewayId] : undefined;
   const agentInfo = useUiStore((s) =>
     activeTask?.agentId && activeTask.agentId !== 'main'
       ? s.agentCatalogByGateway[activeTask.gatewayId]?.agents.find((a) => a.id === activeTask.agentId)
       : undefined,
-  )
-  const sessionUsage = useUsageStore((s) => s.sessionUsage)
-  const cost = useUsageStore((s) => s.cost)
-  const usageStatus = useUsageStore((s) => s.status)
-  const usageLoading = useUsageStore((s) => s.loading)
-  const fetchUsage = useUsageStore((s) => s.fetchUsage)
-  const startAutoRefresh = useUsageStore((s) => s.startAutoRefresh)
-  const stopAutoRefresh = useUsageStore((s) => s.stopAutoRefresh)
+  );
+  const sessionUsage = useUsageStore((s) => s.sessionUsage);
+  const cost = useUsageStore((s) => s.cost);
+  const usageStatus = useUsageStore((s) => s.status);
+  const usageLoading = useUsageStore((s) => s.loading);
+  const fetchUsage = useUsageStore((s) => s.fetchUsage);
+  const startAutoRefresh = useUsageStore((s) => s.startAutoRefresh);
+  const stopAutoRefresh = useUsageStore((s) => s.stopAutoRefresh);
 
-  const costGatewayId = activeTask?.gatewayId ?? ''
-  const sessionKey = activeTask?.sessionKey ?? ''
+  const costGatewayId = activeTask?.gatewayId ?? '';
+  const sessionKey = activeTask?.sessionKey ?? '';
   useEffect(() => {
-    if (costGatewayId) startAutoRefresh(costGatewayId, sessionKey || undefined)
-    return () => stopAutoRefresh()
-  }, [costGatewayId, sessionKey, startAutoRefresh, stopAutoRefresh])
+    if (costGatewayId) startAutoRefresh(costGatewayId, sessionKey || undefined);
+    return () => stopAutoRefresh();
+  }, [costGatewayId, sessionKey, startAutoRefresh, stopAutoRefresh]);
 
-  const inputTokens = sessionUsage?.input ?? activeTask?.inputTokens ?? null
-  const outputTokens = sessionUsage?.output ?? activeTask?.outputTokens ?? null
-  const contextTokens = activeTask?.contextTokens ?? null
-  const sessionCost = sessionUsage?.totalCost ?? null
-  const hasUsageData = inputTokens != null || outputTokens != null || (contextTokens != null && contextTokens > 0) || (sessionCost != null && sessionCost > 0)
+  const inputTokens = sessionUsage?.input ?? activeTask?.inputTokens ?? null;
+  const outputTokens = sessionUsage?.output ?? activeTask?.outputTokens ?? null;
+  const contextTokens = activeTask?.contextTokens ?? null;
+  const sessionCost = sessionUsage?.totalCost ?? null;
+  const hasUsageData =
+    inputTokens != null ||
+    outputTokens != null ||
+    (contextTokens != null && contextTokens > 0) ||
+    (sessionCost != null && sessionCost > 0);
 
   return (
     <header className="titlebar-drag flex items-center justify-between h-12 px-5 border-b border-[var(--border)] flex-shrink-0 relative z-[51]">
@@ -216,12 +241,14 @@ function ChatHeader({ onTogglePanel }: { onTogglePanel: () => void }) {
             <h2 className="font-medium text-[var(--text-primary)] truncate">
               {activeTask.title || t('common.newTask')}
             </h2>
-            <span className={cn(
-              'text-xs px-2 py-0.5 rounded-md',
-              activeTask.status === 'active'
-                ? 'bg-[var(--accent-dim)] text-[var(--accent)]'
-                : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)]',
-            )}>
+            <span
+              className={cn(
+                'text-xs px-2 py-0.5 rounded-md',
+                activeTask.status === 'active'
+                  ? 'bg-[var(--accent-dim)] text-[var(--accent)]'
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)]',
+              )}
+            >
               {activeTask.status === 'active' ? t('common.inProgress') : t('common.completed')}
             </span>
             {hasMultipleGateways && gwInfo && (
@@ -293,23 +320,35 @@ function ChatHeader({ onTogglePanel }: { onTogglePanel: () => void }) {
                     {sessionUsage && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-[var(--text-secondary)]">{t('usage.sessionCost')}</span>
-                          <span className="text-lg font-semibold text-[var(--accent)]">{formatCost(sessionUsage.totalCost)}</span>
+                          <span className="text-xs font-medium text-[var(--text-secondary)]">
+                            {t('usage.sessionCost')}
+                          </span>
+                          <span className="text-lg font-semibold text-[var(--accent)]">
+                            {formatCost(sessionUsage.totalCost)}
+                          </span>
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs text-[var(--text-muted)]">
                           <div className="flex items-center gap-1">
                             <ArrowUp size={10} />
-                            <span>{t('usage.inputTokens')}: {formatTokenCount(sessionUsage.input)}</span>
+                            <span>
+                              {t('usage.inputTokens')}: {formatTokenCount(sessionUsage.input)}
+                            </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <ArrowDown size={10} />
-                            <span>{t('usage.outputTokens')}: {formatTokenCount(sessionUsage.output)}</span>
+                            <span>
+                              {t('usage.outputTokens')}: {formatTokenCount(sessionUsage.output)}
+                            </span>
                           </div>
                           {sessionUsage.cacheRead > 0 && (
-                            <div>{t('usage.cacheRead')}: {formatTokenCount(sessionUsage.cacheRead)}</div>
+                            <div>
+                              {t('usage.cacheRead')}: {formatTokenCount(sessionUsage.cacheRead)}
+                            </div>
                           )}
                           {sessionUsage.cacheWrite > 0 && (
-                            <div>{t('usage.cacheWrite')}: {formatTokenCount(sessionUsage.cacheWrite)}</div>
+                            <div>
+                              {t('usage.cacheWrite')}: {formatTokenCount(sessionUsage.cacheWrite)}
+                            </div>
                           )}
                         </div>
                         <div className="text-xs text-[var(--text-muted)]">
@@ -325,7 +364,11 @@ function ChatHeader({ onTogglePanel }: { onTogglePanel: () => void }) {
                               <div
                                 className={cn(
                                   'h-full rounded-full transition-all duration-300',
-                                  contextTokens / 200_000 >= 0.9 ? 'bg-[var(--error)]' : contextTokens / 200_000 >= 0.7 ? 'bg-[var(--warning)]' : 'bg-[var(--accent)]',
+                                  contextTokens / 200_000 >= 0.9
+                                    ? 'bg-[var(--error)]'
+                                    : contextTokens / 200_000 >= 0.7
+                                      ? 'bg-[var(--warning)]'
+                                      : 'bg-[var(--accent)]',
                                 )}
                                 style={{ width: `${Math.min(100, (contextTokens / 200_000) * 100)}%` }}
                               />
@@ -338,12 +381,20 @@ function ChatHeader({ onTogglePanel }: { onTogglePanel: () => void }) {
                     {cost && (
                       <div className={cn('space-y-2', sessionUsage && 'border-t border-[var(--border)] pt-3')}>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-[var(--text-secondary)]">{t('usage.instanceCost')}</span>
-                          <span className="text-sm font-semibold text-[var(--text-primary)]">{formatCost(cost.totals.totalCost)}</span>
+                          <span className="text-xs font-medium text-[var(--text-secondary)]">
+                            {t('usage.instanceCost')}
+                          </span>
+                          <span className="text-sm font-semibold text-[var(--text-primary)]">
+                            {formatCost(cost.totals.totalCost)}
+                          </span>
                         </div>
                         <div className="grid grid-cols-2 gap-1.5 text-[10px] text-[var(--text-muted)]">
-                          <div>{t('usage.inputTokens')}: {formatTokenCount(cost.totals.input)}</div>
-                          <div>{t('usage.outputTokens')}: {formatTokenCount(cost.totals.output)}</div>
+                          <div>
+                            {t('usage.inputTokens')}: {formatTokenCount(cost.totals.input)}
+                          </div>
+                          <div>
+                            {t('usage.outputTokens')}: {formatTokenCount(cost.totals.output)}
+                          </div>
                         </div>
                         {cost.days > 0 && (
                           <div className="text-[10px] text-[var(--text-muted)]">
@@ -355,13 +406,17 @@ function ChatHeader({ onTogglePanel }: { onTogglePanel: () => void }) {
 
                     {usageStatus && usageStatus.providers.length > 0 && (
                       <div className="space-y-2 border-t border-[var(--border)] pt-3">
-                        <span className="text-xs font-medium text-[var(--text-secondary)]">{t('usage.rateLimits')}</span>
+                        <span className="text-xs font-medium text-[var(--text-secondary)]">
+                          {t('usage.rateLimits')}
+                        </span>
                         {usageStatus.providers.map((provider) => (
                           <div key={provider.provider} className="space-y-1.5">
                             <div className="flex items-center justify-between">
                               <span className="text-xs text-[var(--text-primary)]">{provider.displayName}</span>
                               {provider.plan && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-dim)] text-[var(--accent)]">{provider.plan}</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-dim)] text-[var(--accent)]">
+                                  {provider.plan}
+                                </span>
                               )}
                             </div>
                             {provider.error && (
@@ -382,7 +437,11 @@ function ChatHeader({ onTogglePanel }: { onTogglePanel: () => void }) {
                                   <div
                                     className={cn(
                                       'h-full rounded-full transition-all duration-300',
-                                      w.usedPercent >= 90 ? 'bg-[var(--error)]' : w.usedPercent >= 70 ? 'bg-[var(--warning)]' : 'bg-[var(--accent)]',
+                                      w.usedPercent >= 90
+                                        ? 'bg-[var(--error)]'
+                                        : w.usedPercent >= 70
+                                          ? 'bg-[var(--warning)]'
+                                          : 'bg-[var(--accent)]',
                                     )}
                                     style={{ width: `${Math.min(100, w.usedPercent)}%` }}
                                   />
@@ -419,74 +478,60 @@ function ChatHeader({ onTogglePanel }: { onTogglePanel: () => void }) {
       </div>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onTogglePanel}
-            className="titlebar-no-drag"
-          >
+          <Button variant="ghost" size="icon" onClick={onTogglePanel} className="titlebar-no-drag">
             <PanelRightOpen size={18} />
           </Button>
         </TooltipTrigger>
         <TooltipContent>{t('mainArea.toggleContextPanel')}</TooltipContent>
       </Tooltip>
     </header>
-  )
+  );
 }
 
 function ChatContent() {
-  const activeTaskId = useTaskStore((s) => s.activeTaskId)
-  const activeTask = useTaskStore((s) =>
-    s.tasks.find((task) => task.id === s.activeTaskId),
-  )
+  const activeTaskId = useTaskStore((s) => s.activeTaskId);
+  const activeTask = useTaskStore((s) => s.tasks.find((task) => task.id === s.activeTaskId));
   const messages = useMessageStore((s) =>
     activeTaskId ? (s.messagesByTask[activeTaskId] ?? EMPTY_MESSAGES) : EMPTY_MESSAGES,
-  )
-  const streamingContent = useMessageStore((s) =>
-    activeTaskId ? (s.streamingByTask[activeTaskId] ?? '') : '',
-  )
+  );
+  const streamingContent = useMessageStore((s) => (activeTaskId ? (s.streamingByTask[activeTaskId] ?? '') : ''));
   const streamingThinkingContent = useMessageStore((s) =>
     activeTaskId ? (s.streamingThinkingByTask[activeTaskId] ?? '') : '',
-  )
-  const highlightedId = useMessageStore((s) => s.highlightedMessageId)
-  const setHighlightedMessage = useMessageStore((s) => s.setHighlightedMessage)
-  const isProcessing = useMessageStore((s) =>
-    activeTaskId ? s.processingTasks.has(activeTaskId) : false,
-  )
+  );
+  const highlightedId = useMessageStore((s) => s.highlightedMessageId);
+  const setHighlightedMessage = useMessageStore((s) => s.setHighlightedMessage);
+  const isProcessing = useMessageStore((s) => (activeTaskId ? s.processingTasks.has(activeTaskId) : false));
   const streamingToolCalls = useMessageStore((s) => {
-    if (!activeTaskId) return EMPTY_TOOL_CALLS
-    const msgs = s.messagesByTask[activeTaskId]
-    if (!msgs?.length) return EMPTY_TOOL_CALLS
+    if (!activeTaskId) return EMPTY_TOOL_CALLS;
+    const msgs = s.messagesByTask[activeTaskId];
+    if (!msgs?.length) return EMPTY_TOOL_CALLS;
     for (let i = msgs.length - 1; i >= 0; i--) {
-      if (msgs[i].role === 'user') break
+      if (msgs[i].role === 'user') break;
       if (msgs[i].role === 'assistant' && msgs[i].toolCalls.length > 0) {
-        return msgs[i].toolCalls.some((tc) => tc.status === 'running')
-          ? msgs[i].toolCalls
-          : EMPTY_TOOL_CALLS
+        return msgs[i].toolCalls.some((tc) => tc.status === 'running') ? msgs[i].toolCalls : EMPTY_TOOL_CALLS;
       }
     }
-    return EMPTY_TOOL_CALLS
-  })
-  const viewportRef = useRef<HTMLDivElement>(null)
-  const stickToBottom = useRef(true)
-  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
-  const closeLightbox = useCallback(() => setLightboxSrc(null), [])
-  const [previewFile, setPreviewFile] = useState<{ path: string; content: string } | null>(null)
-  const closeFilePreview = useCallback(() => setPreviewFile(null), [])
-  const handleHighlightDone = useCallback(() => setHighlightedMessage(null), [setHighlightedMessage])
+    return EMPTY_TOOL_CALLS;
+  });
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const stickToBottom = useRef(true);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const closeLightbox = useCallback(() => setLightboxSrc(null), []);
+  const [previewFile, setPreviewFile] = useState<{ path: string; content: string } | null>(null);
+  const closeFilePreview = useCallback(() => setPreviewFile(null), []);
+  const handleHighlightDone = useCallback(() => setHighlightedMessage(null), [setHighlightedMessage]);
 
   const handleScroll = useCallback(() => {
-    const el = viewportRef.current
-    if (!el) return
-    stickToBottom.current =
-      el.scrollHeight - el.scrollTop - el.clientHeight < STICK_TO_BOTTOM_THRESHOLD_PX
-  }, [])
+    const el = viewportRef.current;
+    if (!el) return;
+    stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_TO_BOTTOM_THRESHOLD_PX;
+  }, []);
 
   useEffect(() => {
-    if (!stickToBottom.current) return
-    const el = viewportRef.current
-    if (el) el.scrollTop = el.scrollHeight
-  }, [messages.length, streamingContent, streamingThinkingContent, isProcessing, streamingToolCalls])
+    if (!stickToBottom.current) return;
+    const el = viewportRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages.length, streamingContent, streamingThinkingContent, isProcessing, streamingToolCalls]);
 
   return (
     <>
@@ -504,9 +549,17 @@ function ChatContent() {
               onFileClick={setPreviewFile}
             />
           ))}
-          {(streamingContent || streamingThinkingContent || streamingToolCalls.length > 0) && <StreamingMessage content={streamingContent} thinkingContent={streamingThinkingContent || undefined} toolCalls={streamingToolCalls} />}
+          {(streamingContent || streamingThinkingContent || streamingToolCalls.length > 0) && (
+            <StreamingMessage
+              content={streamingContent}
+              thinkingContent={streamingThinkingContent || undefined}
+              toolCalls={streamingToolCalls}
+            />
+          )}
           <AnimatePresence>
-            {isProcessing && !streamingContent && !streamingThinkingContent && streamingToolCalls.length === 0 && <ThinkingIndicator />}
+            {isProcessing && !streamingContent && !streamingThinkingContent && streamingToolCalls.length === 0 && (
+              <ThinkingIndicator />
+            )}
           </AnimatePresence>
         </div>
       </ScrollArea>
@@ -514,29 +567,26 @@ function ChatContent() {
       <ImageLightbox src={lightboxSrc} onClose={closeLightbox} />
       <FilePreviewModal file={previewFile} onClose={closeFilePreview} />
     </>
-  )
+  );
 }
 
 function ArchivedTasks() {
-  const { t } = useTranslation()
-  const tasks = useTaskStore((s) => s.tasks)
-  const setActiveTask = useTaskStore((s) => s.setActiveTask)
-  const updateTaskStatus = useTaskStore((s) => s.updateTaskStatus)
-  const setMainView = useUiStore((s) => s.setMainView)
+  const { t } = useTranslation();
+  const tasks = useTaskStore((s) => s.tasks);
+  const setActiveTask = useTaskStore((s) => s.setActiveTask);
+  const updateTaskStatus = useTaskStore((s) => s.updateTaskStatus);
+  const setMainView = useUiStore((s) => s.setMainView);
 
-  const archivedTasks = useMemo(
-    () => tasks.filter((task) => task.status === 'archived'),
-    [tasks],
-  )
+  const archivedTasks = useMemo(() => tasks.filter((task) => task.status === 'archived'), [tasks]);
 
   const handleReactivate = (taskId: string): void => {
-    updateTaskStatus(taskId, 'active')
-  }
+    updateTaskStatus(taskId, 'active');
+  };
 
   const handleOpenTask = (taskId: string): void => {
-    setActiveTask(taskId)
-    setMainView('chat')
-  }
+    setActiveTask(taskId);
+    setMainView('chat');
+  };
 
   return (
     <div className="flex flex-col h-full pt-14">
@@ -577,7 +627,10 @@ function ArchivedTasks() {
                         variant="ghost"
                         size="icon"
                         className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                        onClick={(e) => { e.stopPropagation(); handleReactivate(task.id) }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReactivate(task.id);
+                        }}
                       >
                         <RotateCcw size={14} />
                       </Button>
@@ -591,11 +644,11 @@ function ArchivedTasks() {
         </div>
       </ScrollArea>
     </div>
-  )
+  );
 }
 
 export default function MainArea({ onTogglePanel }: MainAreaProps) {
-  const mainView = useUiStore((s) => s.mainView)
+  const mainView = useUiStore((s) => s.mainView);
 
   return (
     <div className="flex flex-col h-full">
@@ -616,5 +669,5 @@ export default function MainArea({ onTogglePanel }: MainAreaProps) {
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }

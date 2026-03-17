@@ -121,9 +121,9 @@ export interface ProgressStep {
 
 /** Image attachment sent via Gateway chat.send. Only image/* MIME types are supported. */
 export interface ChatAttachment {
-  mimeType: string;   // e.g. "image/png", "image/jpeg"
+  mimeType: string; // e.g. "image/png", "image/jpeg"
   fileName: string;
-  content: string;    // base64-encoded (no data URL prefix)
+  content: string; // base64-encoded (no data URL prefix)
 }
 
 // ------------------------------------------------------------

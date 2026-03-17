@@ -23,31 +23,36 @@ interface TaskState {
   setActiveTask: (id: string | null) => void;
   updateTaskTitle: (id: string, title: string) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
-  updateTaskMetadata: (id: string, meta: {
-    model?: string;
-    modelProvider?: string;
-    thinkingLevel?: string;
-    inputTokens?: number;
-    outputTokens?: number;
-    contextTokens?: number;
-    updatedAt?: string;
-  }) => void;
+  updateTaskMetadata: (
+    id: string,
+    meta: {
+      model?: string;
+      modelProvider?: string;
+      thinkingLevel?: string;
+      inputTokens?: number;
+      outputTokens?: number;
+      contextTokens?: number;
+      updatedAt?: string;
+    },
+  ) => void;
   removeTask: (id: string) => void;
   hydrate: () => Promise<void>;
-  adoptTasks: (discovered: {
-    taskId: string;
-    sessionKey: string;
-    title: string;
-    updatedAt: string;
-    gatewayId: string;
-    agentId?: string;
-    model?: string;
-    modelProvider?: string;
-    thinkingLevel?: string;
-    inputTokens?: number;
-    outputTokens?: number;
-    contextTokens?: number;
-  }[]) => void;
+  adoptTasks: (
+    discovered: {
+      taskId: string;
+      sessionKey: string;
+      title: string;
+      updatedAt: string;
+      gatewayId: string;
+      agentId?: string;
+      model?: string;
+      modelProvider?: string;
+      thinkingLevel?: string;
+      inputTokens?: number;
+      outputTokens?: number;
+      contextTokens?: number;
+    }[],
+  ) => void;
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
@@ -122,16 +127,18 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     set((s) => ({
       tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...meta, updatedAt } : t)),
     }));
-    window.clawwork.persistTaskUpdate({
-      id,
-      model: meta.model,
-      modelProvider: meta.modelProvider,
-      thinkingLevel: meta.thinkingLevel,
-      inputTokens: meta.inputTokens,
-      outputTokens: meta.outputTokens,
-      contextTokens: meta.contextTokens,
-      updatedAt,
-    }).catch(() => {});
+    window.clawwork
+      .persistTaskUpdate({
+        id,
+        model: meta.model,
+        modelProvider: meta.modelProvider,
+        thinkingLevel: meta.thinkingLevel,
+        inputTokens: meta.inputTokens,
+        outputTokens: meta.outputTokens,
+        contextTokens: meta.contextTokens,
+        updatedAt,
+      })
+      .catch(() => {});
   },
 
   removeTask: (id) => {

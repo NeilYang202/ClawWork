@@ -57,7 +57,9 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
               <FileCode size={16} className="text-[var(--accent)]" />
               <div className="flex-1 min-w-0">
                 <span className="text-sm font-medium text-[var(--text-primary)] truncate block">{fileName}</span>
-                <span className="text-xs text-[var(--text-muted)]">{file.path} · {lineCount} lines</span>
+                <span className="text-xs text-[var(--text-muted)]">
+                  {file.path} · {lineCount} lines
+                </span>
               </div>
               <button
                 onClick={handleCopy}

@@ -23,8 +23,21 @@ describe('debug export', () => {
       console: false,
     });
 
-    logger.info({ domain: 'gateway', event: 'gateway.req.sent', gatewayId: 'gw-1', sessionKey: 'agent:main:clawwork:task:task-1', taskId: 'task-1' });
-    logger.error({ domain: 'ipc', event: 'ipc.ws.send-message.failed', gatewayId: 'gw-1', sessionKey: 'agent:main:clawwork:task:task-1', taskId: 'task-1', error: { message: 'timeout' } });
+    logger.info({
+      domain: 'gateway',
+      event: 'gateway.req.sent',
+      gatewayId: 'gw-1',
+      sessionKey: 'agent:main:clawwork:task:task-1',
+      taskId: 'task-1',
+    });
+    logger.error({
+      domain: 'ipc',
+      event: 'ipc.ws.send-message.failed',
+      gatewayId: 'gw-1',
+      sessionKey: 'agent:main:clawwork:task:task-1',
+      taskId: 'task-1',
+      error: { message: 'timeout' },
+    });
 
     const result = exportDebugBundle({
       outputDir: join(dir, 'bundles'),

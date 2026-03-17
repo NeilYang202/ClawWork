@@ -1,28 +1,28 @@
-import { Component, ErrorInfo, ReactNode } from 'react'
-import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { Component, ErrorInfo, ReactNode } from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Props {
-  children: ReactNode
+  children: ReactNode;
 }
 
 interface State {
-  hasError: boolean
-  error: Error | null
+  hasError: boolean;
+  error: Error | null;
 }
 
 export default class ErrorBoundary extends Component<Props, State> {
-  state: State = { hasError: false, error: null }
+  state: State = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error }
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('[ErrorBoundary]', error, info)
+    console.error('[ErrorBoundary]', error, info);
   }
 
   render() {
-    if (!this.state.hasError) return this.props.children
+    if (!this.state.hasError) return this.props.children;
 
     return (
       <div className="flex h-screen items-center justify-center bg-[var(--bg-primary)]">
@@ -32,9 +32,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           </div>
           <div className="flex flex-col gap-1">
             <p className="text-[var(--text-primary)] font-medium">Something went wrong</p>
-            <p className="text-[var(--text-muted)] text-sm font-mono break-all">
-              {this.state.error?.message}
-            </p>
+            <p className="text-[var(--text-muted)] text-sm font-mono break-all">{this.state.error?.message}</p>
           </div>
           <button
             onClick={() => window.location.reload()}
@@ -45,6 +43,6 @@ export default class ErrorBoundary extends Component<Props, State> {
           </button>
         </div>
       </div>
-    )
+    );
   }
 }

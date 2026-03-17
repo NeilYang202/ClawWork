@@ -33,6 +33,7 @@ Gateway is a WebSocket-first server (default port `:18789`) sitting between clie
 ```
 
 Key design decisions:
+
 - **Single WS connection** per client (no REST API for core operations)
 - **Request/Response + Event** three-frame model
 - **Broadcast without session filtering** — clients must filter by `sessionKey`
@@ -76,13 +77,13 @@ All communication uses JSON frames over WebSocket. Three frame types form a disc
 
 **Error Codes:**
 
-| Code | Meaning |
-|------|---------|
-| `NOT_LINKED` | Channel/account not linked |
-| `NOT_PAIRED` | Device not paired |
-| `AGENT_TIMEOUT` | Agent execution timed out |
+| Code              | Meaning                              |
+| ----------------- | ------------------------------------ |
+| `NOT_LINKED`      | Channel/account not linked           |
+| `NOT_PAIRED`      | Device not paired                    |
+| `AGENT_TIMEOUT`   | Agent execution timed out            |
 | `INVALID_REQUEST` | Bad parameters or validation failure |
-| `UNAVAILABLE` | Service temporarily unavailable |
+| `UNAVAILABLE`     | Service temporarily unavailable      |
 
 ### 2.3 Event Frame (Server → Client, broadcast)
 
@@ -101,16 +102,16 @@ All communication uses JSON frames over WebSocket. Three frame types form a disc
 
 ### 2.4 Constants
 
-| Constant | Value |
-|----------|-------|
-| `MAX_PAYLOAD_BYTES` | 25 MB |
-| `MAX_BUFFERED_BYTES` | 50 MB (per connection) |
-| `MAX_PREAUTH_PAYLOAD_BYTES` | 64 KB |
-| `TICK_INTERVAL_MS` | 30,000 ms |
-| `HEALTH_REFRESH_INTERVAL_MS` | 60,000 ms |
-| `HANDSHAKE_TIMEOUT_MS` | 3,000 ms |
-| `DEDUPE_TTL_MS` | 5 minutes |
-| `DEDUPE_MAX` | 1,000 entries |
+| Constant                     | Value                  |
+| ---------------------------- | ---------------------- |
+| `MAX_PAYLOAD_BYTES`          | 25 MB                  |
+| `MAX_BUFFERED_BYTES`         | 50 MB (per connection) |
+| `MAX_PREAUTH_PAYLOAD_BYTES`  | 64 KB                  |
+| `TICK_INTERVAL_MS`           | 30,000 ms              |
+| `HEALTH_REFRESH_INTERVAL_MS` | 60,000 ms              |
+| `HANDSHAKE_TIMEOUT_MS`       | 3,000 ms               |
+| `DEDUPE_TTL_MS`              | 5 minutes              |
+| `DEDUPE_MAX`                 | 1,000 entries          |
 
 ---
 
@@ -184,38 +185,38 @@ Client                          Gateway
 
 **Client IDs** (for ClawWork, use `openclaw-macos`):
 
-| ID | Purpose |
-|----|---------|
-| `webchat-ui` | Browser WebChat UI |
-| `openclaw-control-ui` | Admin Control UI |
-| `openclaw-macos` | macOS desktop app |
-| `openclaw-ios` | iOS app |
-| `openclaw-android` | Android app |
-| `cli` | Command-line client |
-| `gateway-client` | Generic SDK client |
-| `node-host` | Remote compute node |
-| `test` | Automated testing |
-| `fingerprint` | Device fingerprinting |
-| `openclaw-probe` | Health probing |
+| ID                    | Purpose               |
+| --------------------- | --------------------- |
+| `webchat-ui`          | Browser WebChat UI    |
+| `openclaw-control-ui` | Admin Control UI      |
+| `openclaw-macos`      | macOS desktop app     |
+| `openclaw-ios`        | iOS app               |
+| `openclaw-android`    | Android app           |
+| `cli`                 | Command-line client   |
+| `gateway-client`      | Generic SDK client    |
+| `node-host`           | Remote compute node   |
+| `test`                | Automated testing     |
+| `fingerprint`         | Device fingerprinting |
+| `openclaw-probe`      | Health probing        |
 
 **Client Modes:**
 
-| Mode | Purpose |
-|------|---------|
-| `webchat` | WebChat UI interface |
-| `cli` | Command-line interface |
-| `ui` | Desktop/Mobile UI (use this for ClawWork) |
-| `backend` | Backend service |
-| `node` | Remote compute node |
-| `probe` | Health check probing |
-| `test` | Automated testing |
+| Mode      | Purpose                                   |
+| --------- | ----------------------------------------- |
+| `webchat` | WebChat UI interface                      |
+| `cli`     | Command-line interface                    |
+| `ui`      | Desktop/Mobile UI (use this for ClawWork) |
+| `backend` | Backend service                           |
+| `node`    | Remote compute node                       |
+| `probe`   | Health check probing                      |
+| `test`    | Automated testing                         |
 
 ### 3.4 Capability Negotiation
 
 Capabilities are requested in `ConnectParams.caps` and gate access to specific event streams.
 
-| Capability | Effect |
-|------------|--------|
+| Capability    | Effect                                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `tool-events` | Enables receiving `agent` events with tool-call details. Without this cap, tool events are not sent to the client. |
 
 ### 3.5 HelloOk Response
@@ -278,29 +279,30 @@ Gateway broadcasts 19 event types. All events use the Event Frame format.
 
 ### 4.1 Event Types
 
-| Event | Payload | `dropIfSlow` | Scope Guard | Purpose |
-|-------|---------|-------------|-------------|---------|
-| `connect.challenge` | `{ nonce, ts }` | No | — | Auth handshake |
-| `chat` | ChatEvent | delta: Yes, final: No | — | Message streaming |
-| `agent` | AgentEvent | Tool: Yes | — | Agent execution events |
-| `presence` | PresenceEntry[] | No | — | Client connect/disconnect |
-| `tick` | `{ ts }` | Yes | — | Heartbeat (30s) |
-| `health` | HealthSnapshot | Yes | — | System health (60s) |
-| `heartbeat` | varies | Yes | — | Agent heartbeat ACK |
-| `shutdown` | `{ reason, restartExpectedMs? }` | No | — | Graceful shutdown |
-| `talk.mode` | varies | No | — | Voice mode change |
-| `cron` | CronEvent | No | — | Cron job events |
-| `node.pair.requested` | varies | No | `operator.pairing` | Node pairing request |
-| `node.pair.resolved` | varies | No | `operator.pairing` | Node pairing result |
-| `node.invoke.request` | varies | No | — | Node task dispatch |
-| `device.pair.requested` | varies | No | `operator.pairing` | Device pairing request |
-| `device.pair.resolved` | varies | No | `operator.pairing` | Device pairing result |
-| `voicewake.changed` | varies | No | — | Voice wake config |
-| `exec.approval.requested` | varies | No | `operator.approvals` | Execution approval |
-| `exec.approval.resolved` | varies | No | `operator.approvals` | Approval resolution |
-| `update-available` | `{ currentVersion, latestVersion, channel }` | No | — | Software update |
+| Event                     | Payload                                      | `dropIfSlow`          | Scope Guard          | Purpose                   |
+| ------------------------- | -------------------------------------------- | --------------------- | -------------------- | ------------------------- |
+| `connect.challenge`       | `{ nonce, ts }`                              | No                    | —                    | Auth handshake            |
+| `chat`                    | ChatEvent                                    | delta: Yes, final: No | —                    | Message streaming         |
+| `agent`                   | AgentEvent                                   | Tool: Yes             | —                    | Agent execution events    |
+| `presence`                | PresenceEntry[]                              | No                    | —                    | Client connect/disconnect |
+| `tick`                    | `{ ts }`                                     | Yes                   | —                    | Heartbeat (30s)           |
+| `health`                  | HealthSnapshot                               | Yes                   | —                    | System health (60s)       |
+| `heartbeat`               | varies                                       | Yes                   | —                    | Agent heartbeat ACK       |
+| `shutdown`                | `{ reason, restartExpectedMs? }`             | No                    | —                    | Graceful shutdown         |
+| `talk.mode`               | varies                                       | No                    | —                    | Voice mode change         |
+| `cron`                    | CronEvent                                    | No                    | —                    | Cron job events           |
+| `node.pair.requested`     | varies                                       | No                    | `operator.pairing`   | Node pairing request      |
+| `node.pair.resolved`      | varies                                       | No                    | `operator.pairing`   | Node pairing result       |
+| `node.invoke.request`     | varies                                       | No                    | —                    | Node task dispatch        |
+| `device.pair.requested`   | varies                                       | No                    | `operator.pairing`   | Device pairing request    |
+| `device.pair.resolved`    | varies                                       | No                    | `operator.pairing`   | Device pairing result     |
+| `voicewake.changed`       | varies                                       | No                    | —                    | Voice wake config         |
+| `exec.approval.requested` | varies                                       | No                    | `operator.approvals` | Execution approval        |
+| `exec.approval.resolved`  | varies                                       | No                    | `operator.approvals` | Approval resolution       |
+| `update-available`        | `{ currentVersion, latestVersion, channel }` | No                    | —                    | Software update           |
 
 **Scope Guards:**
+
 - `operator.admin` — has access to all scoped events
 - `operator.approvals` — exec approval events
 - `operator.pairing` — device/node pairing events
@@ -327,6 +329,7 @@ The primary event for receiving AI responses. Streams incrementally.
 ```
 
 **State machine:**
+
 ```
          ┌─────────┐
          │  delta   │──► (repeated, throttled at 150ms)
@@ -361,24 +364,27 @@ Requires `caps: ["tool-events"]` capability. Provides granular agent execution v
 
 **Stream types:**
 
-| stream | data fields | description |
-|--------|-------------|-------------|
-| `assistant` | `{ text, delta }` | Text generation fragment |
-| `tool` | `{ phase, name, args?, result?, partialResult? }` | Tool invocation |
-| `lifecycle` | `{ phase, error?, stopReason? }` | Run lifecycle |
-| `error` | `{ reason, expected?, received? }` | Sequence errors |
+| stream      | data fields                                       | description              |
+| ----------- | ------------------------------------------------- | ------------------------ |
+| `assistant` | `{ text, delta }`                                 | Text generation fragment |
+| `tool`      | `{ phase, name, args?, result?, partialResult? }` | Tool invocation          |
+| `lifecycle` | `{ phase, error?, stopReason? }`                  | Run lifecycle            |
+| `error`     | `{ reason, expected?, received? }`                | Sequence errors          |
 
 **Tool event phases:**
+
 - `phase: "start"` — tool invocation begins, includes `name` and `args`
 - `phase: "end"` — tool invocation complete, includes `result` (stripped unless `verboseLevel=full`)
 
 **Lifecycle event phases:**
+
 - `phase: "start"` — agent run begins
 - `phase: "end"` — agent run completes normally, may include `stopReason`
 - `phase: "error"` — agent run failed, includes `error`
 
 **Tool Event Delivery:**
 Tool events use **targeted delivery**, not broadcast. Only connections that:
+
 1. Have `caps: ["tool-events"]`
 2. Are registered for the specific `runId`
 
@@ -771,12 +777,12 @@ Manage agent configuration files (system prompt, etc).
 // Response
 {
   models: Array<{
-    id: string,
-    name: string,
-    provider: string,
-    contextWindow?: number,
-    reasoning?: boolean
-  }>
+    id: string;
+    name: string;
+    provider: string;
+    contextWindow?: number;
+    reasoning?: boolean;
+  }>;
 }
 ```
 
@@ -964,70 +970,70 @@ Get execution history.
 
 Remote compute node management.
 
-| Method | Purpose |
-|--------|---------|
-| `node.list` | List connected nodes |
-| `node.describe` | Get node capabilities |
-| `node.rename` | Rename a node |
-| `node.invoke` | Execute command on node |
-| `node.invoke.result` | Return invocation result |
-| `node.event` | Report node event |
-| `node.pending.enqueue` | Queue work for a node |
-| `node.pending.drain` | Drain pending queue |
-| `node.pending.pull` | Pull next pending item |
-| `node.pending.ack` | Acknowledge completion |
-| `node.pair.request` | Initiate pairing |
-| `node.pair.list` | List pairing requests |
-| `node.pair.approve` | Approve pairing |
-| `node.pair.reject` | Reject pairing |
-| `node.pair.verify` | Verify paired node |
+| Method                 | Purpose                  |
+| ---------------------- | ------------------------ |
+| `node.list`            | List connected nodes     |
+| `node.describe`        | Get node capabilities    |
+| `node.rename`          | Rename a node            |
+| `node.invoke`          | Execute command on node  |
+| `node.invoke.result`   | Return invocation result |
+| `node.event`           | Report node event        |
+| `node.pending.enqueue` | Queue work for a node    |
+| `node.pending.drain`   | Drain pending queue      |
+| `node.pending.pull`    | Pull next pending item   |
+| `node.pending.ack`     | Acknowledge completion   |
+| `node.pair.request`    | Initiate pairing         |
+| `node.pair.list`       | List pairing requests    |
+| `node.pair.approve`    | Approve pairing          |
+| `node.pair.reject`     | Reject pairing           |
+| `node.pair.verify`     | Verify paired node       |
 
 ### 5.11 Device Methods
 
 Device authentication lifecycle.
 
-| Method | Purpose |
-|--------|---------|
-| `device.pair.list` | List pending device pairings |
-| `device.pair.approve` | Approve device |
-| `device.pair.reject` | Reject device |
-| `device.pair.remove` | Remove paired device |
-| `device.token.rotate` | Rotate device token |
-| `device.token.revoke` | Revoke device token |
+| Method                | Purpose                      |
+| --------------------- | ---------------------------- |
+| `device.pair.list`    | List pending device pairings |
+| `device.pair.approve` | Approve device               |
+| `device.pair.reject`  | Reject device                |
+| `device.pair.remove`  | Remove paired device         |
+| `device.token.rotate` | Rotate device token          |
+| `device.token.revoke` | Revoke device token          |
 
 ### 5.12 Execution Approval
 
 Interactive approval workflow for agent actions.
 
-| Method | Purpose |
-|--------|---------|
-| `exec.approval.request` | Request approval for an action |
-| `exec.approval.waitDecision` | Wait for approval decision |
-| `exec.approval.resolve` | Approve or reject |
-| `exec.approvals.get` | Get approval settings |
-| `exec.approvals.set` | Set approval settings |
-| `exec.approvals.node.get` | Get node approval settings |
-| `exec.approvals.node.set` | Set node approval settings |
+| Method                       | Purpose                        |
+| ---------------------------- | ------------------------------ |
+| `exec.approval.request`      | Request approval for an action |
+| `exec.approval.waitDecision` | Wait for approval decision     |
+| `exec.approval.resolve`      | Approve or reject              |
+| `exec.approvals.get`         | Get approval settings          |
+| `exec.approvals.set`         | Set approval settings          |
+| `exec.approvals.node.get`    | Get node approval settings     |
+| `exec.approvals.node.set`    | Set node approval settings     |
 
 ### 5.13 Other Methods
 
-| Method | Purpose |
-|--------|---------|
-| `health` | Gateway health status |
-| `status` | System status |
-| `usage.status` | Token/cost usage stats |
-| `usage.cost` | Cost breakdown |
-| `logs.tail` | Stream gateway log lines |
-| `gateway.identity.get` | Gateway instance identity |
-| `system-presence` | Current presence snapshot |
-| `system-event` | Emit system event |
-| `wake` | `{ mode: "now" \| "next-heartbeat", text: string }` |
-| `browser.request` | Browser integration |
-| `wizard.start/next/cancel/status` | Onboarding wizard |
-| `channels.status` | Channel connection status |
-| `channels.logout` | Disconnect channel |
-| `update.run` | Trigger software update |
-| `doctor.memory.status` | Memory diagnostics |
+| Method                            | Purpose                                             |
+| --------------------------------- | --------------------------------------------------- |
+| `health`                          | Gateway health status                               |
+| `status`                          | System status                                       |
+| `usage.status`                    | Token/cost usage stats                              |
+| `usage.cost`                      | Cost breakdown                                      |
+| `logs.tail`                       | Stream gateway log lines                            |
+| `gateway.identity.get`            | Gateway instance identity                           |
+| `system-presence`                 | Current presence snapshot                           |
+| `system-event`                    | Emit system event                                   |
+| `wake`                            | `{ mode: "now" \| "next-heartbeat", text: string }` |
+| `browser.request`                 | Browser integration                                 |
+| `wizard.start/next/cancel/status` | Onboarding wizard                                   |
+| `channels.status`                 | Channel connection status                           |
+| `channels.logout`                 | Disconnect channel                                  |
+| `update.run`                      | Trigger software update                             |
+| `doctor.memory.status`            | Memory diagnostics                                  |
 
 ---
 
@@ -1035,15 +1041,15 @@ Interactive approval workflow for agent actions.
 
 In addition to WebSocket, Gateway exposes HTTP endpoints:
 
-| Path | Method | Purpose |
-|------|--------|---------|
-| `/health`, `/healthz` | GET | Liveness probe |
-| `/ready`, `/readyz` | GET | Readiness probe |
-| `/v1/chat/completions` | POST | OpenAI-compatible chat API |
-| `/v1/responses` | POST | OpenResponses API |
-| Agent avatar URLs | GET | Serve agent avatar images |
-| Canvas WS path | WS | Canvas collaboration |
-| Plugin routes | Various | Channel plugin HTTP handlers |
+| Path                   | Method  | Purpose                      |
+| ---------------------- | ------- | ---------------------------- |
+| `/health`, `/healthz`  | GET     | Liveness probe               |
+| `/ready`, `/readyz`    | GET     | Readiness probe              |
+| `/v1/chat/completions` | POST    | OpenAI-compatible chat API   |
+| `/v1/responses`        | POST    | OpenResponses API            |
+| Agent avatar URLs      | GET     | Serve agent avatar images    |
+| Canvas WS path         | WS      | Canvas collaboration         |
+| Plugin routes          | Various | Channel plugin HTTP handlers |
 
 The `/v1/chat/completions` endpoint allows OpenAI-compatible integration, but for ClawWork the WebSocket protocol is the primary interface.
 
@@ -1055,33 +1061,35 @@ The `/v1/chat/completions` endpoint allows OpenAI-compatible integration, but fo
 
 Gateway supports four authentication modes (configured server-side):
 
-| Mode | ConnectParams field | Description |
-|------|--------------------|-|
-| `none` | — | No auth required |
-| `token` | `auth.token` | Shared secret token |
-| `password` | `auth.password` | Password authentication |
-| `trusted-proxy` | — | Trust reverse proxy headers |
+| Mode            | ConnectParams field | Description                 |
+| --------------- | ------------------- | --------------------------- |
+| `none`          | —                   | No auth required            |
+| `token`         | `auth.token`        | Shared secret token         |
+| `password`      | `auth.password`     | Password authentication     |
+| `trusted-proxy` | —                   | Trust reverse proxy headers |
 
 Device-based auth (`auth.deviceToken` or `device.*` fields) is an additional layer.
 
 ### 7.2 Rate Limiting
 
-| Scope | Max Attempts | Window | Lockout |
-|-------|-------------|--------|---------|
-| `shared-secret` | 10 | 60s | 300s |
-| `device-token` | 10 | 60s | 300s |
-| `hook-auth` | 20 | 60s | 300s |
-| `default` | 10 | 60s | 300s |
+| Scope           | Max Attempts | Window | Lockout |
+| --------------- | ------------ | ------ | ------- |
+| `shared-secret` | 10           | 60s    | 300s    |
+| `device-token`  | 10           | 60s    | 300s    |
+| `hook-auth`     | 20           | 60s    | 300s    |
+| `default`       | 10           | 60s    | 300s    |
 
 Loopback addresses (`127.0.0.1`, `::1`) are exempt by default.
 
 ### 7.3 Roles & Scopes
 
 Roles control method and event access:
+
 - `operator` — default role for human users
 - `node` — compute node role
 
 Scopes (carried in `ConnectParams.scopes`):
+
 - `operator.admin` — full access to all scoped events
 - `operator.approvals` — exec approval events
 - `operator.pairing` — device/node pairing events
@@ -1097,6 +1105,7 @@ agent:<agentKey>:<scope>:<label>
 ```
 
 For ClawWork:
+
 ```
 agent:main:clawwork:task:<taskId>
 ```
@@ -1144,17 +1153,19 @@ Messages in `chat` events and `chat.history` responses follow this structure:
 
 ```typescript
 // 1. Send chat.send
-ws.send(JSON.stringify({
-  type: "req",
-  id: uuid(),
-  method: "chat.send",
-  params: {
-    sessionKey: `agent:main:clawwork:task:${taskId}`,
-    message: "Hello",
-    deliver: false,
-    idempotencyKey: uuid()
-  }
-}));
+ws.send(
+  JSON.stringify({
+    type: 'req',
+    id: uuid(),
+    method: 'chat.send',
+    params: {
+      sessionKey: `agent:main:clawwork:task:${taskId}`,
+      message: 'Hello',
+      deliver: false,
+      idempotencyKey: uuid(),
+    },
+  }),
+);
 
 // 2. Listen for response
 // { type: "res", id: "...", ok: true, payload: { runId: "...", sessionId: "..." } }
@@ -1167,22 +1178,22 @@ ws.send(JSON.stringify({
 
 ### 10.3 Capabilities ClawWork Can Leverage
 
-| Capability | Gateway Support | ClawWork Feature |
-|-----------|-----------------|------------------|
-| Multi-session | `sessions.list`, unique sessionKeys | Parallel task execution |
-| Streaming responses | `chat` events with delta/final | Real-time response rendering |
-| Tool visibility | `agent` events with tool-events cap | Tool-call progress UI |
-| Session management | `sessions.patch`, `sessions.reset` | Task configuration |
-| Model selection | `models.list`, `sessions.patch(model)` | Per-task model override |
-| Agent management | `agents.*` methods | Multi-agent workflows |
-| Cron scheduling | `cron.*` methods | Automated recurring tasks |
-| Message history | `chat.history` | Session restoration |
-| Abort | `chat.abort` | Cancel running tasks |
-| Usage tracking | `usage.status`, `usage.cost` | Token/cost dashboard |
-| Skills | `skills.*` methods | Skill management UI |
-| Exec approval | `exec.approval.*` events/methods | Interactive approval gates |
-| Health monitoring | `health` events | Server status indicator |
-| Thinking/reasoning | `sessions.patch(thinkingLevel)` | Thinking mode toggle |
+| Capability          | Gateway Support                        | ClawWork Feature             |
+| ------------------- | -------------------------------------- | ---------------------------- |
+| Multi-session       | `sessions.list`, unique sessionKeys    | Parallel task execution      |
+| Streaming responses | `chat` events with delta/final         | Real-time response rendering |
+| Tool visibility     | `agent` events with tool-events cap    | Tool-call progress UI        |
+| Session management  | `sessions.patch`, `sessions.reset`     | Task configuration           |
+| Model selection     | `models.list`, `sessions.patch(model)` | Per-task model override      |
+| Agent management    | `agents.*` methods                     | Multi-agent workflows        |
+| Cron scheduling     | `cron.*` methods                       | Automated recurring tasks    |
+| Message history     | `chat.history`                         | Session restoration          |
+| Abort               | `chat.abort`                           | Cancel running tasks         |
+| Usage tracking      | `usage.status`, `usage.cost`           | Token/cost dashboard         |
+| Skills              | `skills.*` methods                     | Skill management UI          |
+| Exec approval       | `exec.approval.*` events/methods       | Interactive approval gates   |
+| Health monitoring   | `health` events                        | Server status indicator      |
+| Thinking/reasoning  | `sessions.patch(thinkingLevel)`        | Thinking mode toggle         |
 
 ### 10.4 What ClawWork Should NOT Do
 
@@ -1196,23 +1207,23 @@ ws.send(JSON.stringify({
 
 ## 11. Source File Reference
 
-| Domain | Key File | Lines |
-|--------|----------|-------|
-| Frame types | `src/gateway/protocol/schema/frames.ts` | 165 |
-| Client identity | `src/gateway/protocol/client-info.ts` | 87 |
-| Method registry | `src/gateway/server-methods-list.ts` | 134 |
-| Chat schemas | `src/gateway/protocol/schema/logs-chat.ts` | 84 |
-| Agent schemas | `src/gateway/protocol/schema/agent.ts` | 138 |
-| Session schemas | `src/gateway/protocol/schema/sessions.ts` | 140 |
-| Snapshot schema | `src/gateway/protocol/schema/snapshot.ts` | 73 |
-| Agent/model/skill schemas | `src/gateway/protocol/schema/agents-models-skills.ts` | 271 |
-| Cron schemas | `src/gateway/protocol/schema/cron.ts` | 376 |
-| Error codes | `src/gateway/protocol/schema/error-codes.ts` | 24 |
-| Chat streaming | `src/gateway/server-chat.ts` | 643 |
-| Broadcast engine | `src/gateway/server-broadcast.ts` | 132 |
-| Constants | `src/gateway/server-constants.ts` | 34 |
-| Server startup | `src/gateway/server.impl.ts` | ~1500 |
-| WS message handler | `src/gateway/server/ws-connection/message-handler.ts` | ~1300 |
-| Chat RPC impl | `src/gateway/server-methods/chat.ts` | ~1500 |
-| Session RPC impl | `src/gateway/server-methods/sessions.ts` | — |
-| Command registry | `src/auto-reply/commands-registry.data.ts` | ~600 |
+| Domain                    | Key File                                              | Lines |
+| ------------------------- | ----------------------------------------------------- | ----- |
+| Frame types               | `src/gateway/protocol/schema/frames.ts`               | 165   |
+| Client identity           | `src/gateway/protocol/client-info.ts`                 | 87    |
+| Method registry           | `src/gateway/server-methods-list.ts`                  | 134   |
+| Chat schemas              | `src/gateway/protocol/schema/logs-chat.ts`            | 84    |
+| Agent schemas             | `src/gateway/protocol/schema/agent.ts`                | 138   |
+| Session schemas           | `src/gateway/protocol/schema/sessions.ts`             | 140   |
+| Snapshot schema           | `src/gateway/protocol/schema/snapshot.ts`             | 73    |
+| Agent/model/skill schemas | `src/gateway/protocol/schema/agents-models-skills.ts` | 271   |
+| Cron schemas              | `src/gateway/protocol/schema/cron.ts`                 | 376   |
+| Error codes               | `src/gateway/protocol/schema/error-codes.ts`          | 24    |
+| Chat streaming            | `src/gateway/server-chat.ts`                          | 643   |
+| Broadcast engine          | `src/gateway/server-broadcast.ts`                     | 132   |
+| Constants                 | `src/gateway/server-constants.ts`                     | 34    |
+| Server startup            | `src/gateway/server.impl.ts`                          | ~1500 |
+| WS message handler        | `src/gateway/server/ws-connection/message-handler.ts` | ~1300 |
+| Chat RPC impl             | `src/gateway/server-methods/chat.ts`                  | ~1500 |
+| Session RPC impl          | `src/gateway/server-methods/sessions.ts`              | —     |
+| Command registry          | `src/auto-reply/commands-registry.data.ts`            | ~600  |

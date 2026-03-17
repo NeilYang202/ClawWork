@@ -1,6 +1,6 @@
 name: Feature request
 description: Propose an improvement to ClawWork
-title: "[Feature] "
+title: '[Feature] '
 labels:
   - enhancement
 body:

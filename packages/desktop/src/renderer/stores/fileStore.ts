@@ -32,8 +32,7 @@ export const useFileStore = create<FileState>((set) => ({
 
   setArtifacts: (artifacts) => set({ artifacts }),
 
-  addArtifact: (artifact) =>
-    set((s) => ({ artifacts: [artifact, ...s.artifacts] })),
+  addArtifact: (artifact) => set((s) => ({ artifacts: [artifact, ...s.artifacts] })),
 
   setFilterTaskId: (taskId) => set({ filterTaskId: taskId }),
 

@@ -64,10 +64,10 @@ gateway.heartbeat.start          → keepalive active
 
 **Common failure patterns**:
 
-| Symptom | What to look for |
-|---------|-----------------|
-| Message sent, no response | `gateway.req.sent` present but no matching `gateway.res.received` → check `gateway.req.timeout` |
+| Symptom                                     | What to look for                                                                                                            |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Message sent, no response                   | `gateway.req.sent` present but no matching `gateway.res.received` → check `gateway.req.timeout`                             |
 | Message sent, response OK but nothing in UI | `gateway.res.received` ok:true but no `renderer.chat.delta.applied` → event routing issue, check `renderer.event.dropped.*` |
-| Connection drops | `gateway.ws.close` with code/reason, then `gateway.reconnect.scheduled` or `gateway.reconnect.giveup` |
-| Auth failure | `gateway.challenge.received` followed by `gateway.challenge.invalid` instead of `gateway.connect.res.ok` |
-| IPC call fails silently | `ipc.ws.send-message.requested` present but no `.completed` → check `ipc.ws.send-message.failed` for error |
+| Connection drops                            | `gateway.ws.close` with code/reason, then `gateway.reconnect.scheduled` or `gateway.reconnect.giveup`                       |
+| Auth failure                                | `gateway.challenge.received` followed by `gateway.challenge.invalid` instead of `gateway.connect.res.ok`                    |
+| IPC call fails silently                     | `ipc.ws.send-message.requested` present but no `.completed` → check `ipc.ws.send-message.failed` for error                  |

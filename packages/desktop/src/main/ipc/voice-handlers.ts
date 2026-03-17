@@ -137,7 +137,9 @@ export function registerVoiceHandlers(): void {
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : String(err) };
     } finally {
-      try { unlinkSync(tempPath); } catch {}
+      try {
+        unlinkSync(tempPath);
+      } catch {}
     }
   });
 }

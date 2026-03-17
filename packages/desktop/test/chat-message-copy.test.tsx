@@ -11,12 +11,15 @@ import StreamingMessage from '../src/renderer/components/StreamingMessage';
 vi.mock('framer-motion', async () => {
   const React = await import('react');
 
-  const motion = new Proxy({}, {
-    get: (_target, tag: string) =>
-      React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
-        ({ children, ...props }, ref) => React.createElement(tag, { ...props, ref }, children),
-      ),
-  });
+  const motion = new Proxy(
+    {},
+    {
+      get: (_target, tag: string) =>
+        React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(({ children, ...props }, ref) =>
+          React.createElement(tag, { ...props, ref }, children),
+        ),
+    },
+  );
 
   return {
     AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -124,8 +127,6 @@ describe('chat message copy actions', () => {
       button?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
 
-    expect(window.navigator.clipboard.writeText).toHaveBeenCalledWith(
-      'const alpha = 1;\nconst beta = alpha + 1;',
-    );
+    expect(window.navigator.clipboard.writeText).toHaveBeenCalledWith('const alpha = 1;\nconst beta = alpha + 1;');
   });
 });

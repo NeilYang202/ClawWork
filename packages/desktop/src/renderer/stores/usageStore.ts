@@ -35,10 +35,7 @@ export const useUsageStore = create<UsageState>((set, get) => ({
 
       const promises: Promise<{ ok: boolean; result?: Record<string, unknown>; error?: string }>[] = [];
       if (!skipInstance) {
-        promises.push(
-          window.clawwork.getUsageStatus(gatewayId),
-          window.clawwork.getUsageCost(gatewayId, { days: 30 }),
-        );
+        promises.push(window.clawwork.getUsageStatus(gatewayId), window.clawwork.getUsageCost(gatewayId, { days: 30 }));
       }
       if (sessionKey) {
         promises.push(window.clawwork.getSessionUsage(gatewayId, sessionKey));

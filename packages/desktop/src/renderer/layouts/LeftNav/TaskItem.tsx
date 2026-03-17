@@ -1,42 +1,46 @@
-import { type MouseEvent } from 'react'
-import { motion } from 'framer-motion'
-import { MessageSquare, Circle, Loader2, Server, Cpu, Bot } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { cn } from '@/lib/utils'
-import { formatRelativeTime } from '@/lib/utils'
-import { useTaskStore } from '@/stores/taskStore'
-import { useMessageStore } from '@/stores/messageStore'
-import { useUiStore } from '@/stores/uiStore'
-import { motion as motionPresets } from '@/styles/design-tokens'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import type { Task } from '@clawwork/shared'
+import { type MouseEvent } from 'react';
+import { motion } from 'framer-motion';
+import { MessageSquare, Circle, Loader2, Server, Cpu, Bot } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
+import { formatRelativeTime } from '@/lib/utils';
+import { useTaskStore } from '@/stores/taskStore';
+import { useMessageStore } from '@/stores/messageStore';
+import { useUiStore } from '@/stores/uiStore';
+import { motion as motionPresets } from '@/styles/design-tokens';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import type { Task } from '@clawwork/shared';
 
-const GATEWAY_INJECTED_MODEL = 'gateway-injected'
+const GATEWAY_INJECTED_MODEL = 'gateway-injected';
 
 interface TaskItemProps {
-  task: Task
-  active: boolean
-  onContextMenu: (e: MouseEvent) => void
+  task: Task;
+  active: boolean;
+  onContextMenu: (e: MouseEvent) => void;
 }
 
 export default function TaskItem({ task, active, onContextMenu }: TaskItemProps) {
-  const { t } = useTranslation()
-  const setActiveTask = useTaskStore((s) => s.setActiveTask)
-  const clearUnread = useUiStore((s) => s.clearUnread)
-  const hasUnread = useUiStore((s) => s.unreadTaskIds.has(task.id))
-  const setMainView = useUiStore((s) => s.setMainView)
-  const isStreaming = useMessageStore((s) => !!s.streamingByTask[task.id])
-  const gwInfo = useUiStore((s) => s.gatewayInfoMap[task.gatewayId])
-  const multiGateway = useUiStore((s) => Object.keys(s.gatewayInfoMap).length > 1)
-  const agentInfo = useUiStore((s) => task.agentId && task.agentId !== 'main' ? s.agentCatalogByGateway[task.gatewayId]?.agents.find((a) => a.id === task.agentId) : undefined)
-  const modelLabel = task.model === GATEWAY_INJECTED_MODEL ? 'Default' : task.model?.split('/').pop()
-  const modelTooltip = task.model === GATEWAY_INJECTED_MODEL ? 'Default' : task.model
+  const { t } = useTranslation();
+  const setActiveTask = useTaskStore((s) => s.setActiveTask);
+  const clearUnread = useUiStore((s) => s.clearUnread);
+  const hasUnread = useUiStore((s) => s.unreadTaskIds.has(task.id));
+  const setMainView = useUiStore((s) => s.setMainView);
+  const isStreaming = useMessageStore((s) => !!s.streamingByTask[task.id]);
+  const gwInfo = useUiStore((s) => s.gatewayInfoMap[task.gatewayId]);
+  const multiGateway = useUiStore((s) => Object.keys(s.gatewayInfoMap).length > 1);
+  const agentInfo = useUiStore((s) =>
+    task.agentId && task.agentId !== 'main'
+      ? s.agentCatalogByGateway[task.gatewayId]?.agents.find((a) => a.id === task.agentId)
+      : undefined,
+  );
+  const modelLabel = task.model === GATEWAY_INJECTED_MODEL ? 'Default' : task.model?.split('/').pop();
+  const modelTooltip = task.model === GATEWAY_INJECTED_MODEL ? 'Default' : task.model;
 
   const handleClick = (): void => {
-    setActiveTask(task.id)
-    clearUnread(task.id)
-    setMainView('chat')
-  }
+    setActiveTask(task.id);
+    clearUnread(task.id);
+    setMainView('chat');
+  };
 
   return (
     <motion.button
@@ -52,15 +56,11 @@ export default function TaskItem({ task, active, onContextMenu }: TaskItemProps)
           : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]',
       )}
     >
-      {active && (
-        <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-[var(--accent)]" />
-      )}
+      {active && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-[var(--accent)]" />}
       <MessageSquare size={16} className="mt-0.5 flex-shrink-0 opacity-50" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <p className="font-medium truncate flex-1">
-            {task.title || t('common.newTask')}
-          </p>
+          <p className="font-medium truncate flex-1">{task.title || t('common.newTask')}</p>
           {isStreaming ? (
             <Loader2 size={12} className="flex-shrink-0 animate-spin text-[var(--accent)]" />
           ) : hasUnread ? (
@@ -113,11 +113,9 @@ export default function TaskItem({ task, active, onContextMenu }: TaskItemProps)
               <TooltipContent>{modelTooltip}</TooltipContent>
             </Tooltip>
           )}
-          <p className="text-xs text-[var(--text-muted)]">
-            {formatRelativeTime(new Date(task.updatedAt))}
-          </p>
+          <p className="text-xs text-[var(--text-muted)]">{formatRelativeTime(new Date(task.updatedAt))}</p>
         </div>
       </div>
     </motion.button>
-  )
+  );
 }

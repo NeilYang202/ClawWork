@@ -1,47 +1,48 @@
-import { useEffect, useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { ShieldAlert } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { useApprovalStore } from '../stores/approvalStore'
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ShieldAlert } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useApprovalStore } from '../stores/approvalStore';
 
 function RiskBadge({ security }: { security?: string | null }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   if (security === 'full') {
     return (
-      <span className="rounded px-1.5 py-0.5 text-xs font-medium" style={{ background: 'color-mix(in srgb, #ef4444 15%, var(--bg-elevated))', color: '#ef4444' }}>
+      <span
+        className="rounded px-1.5 py-0.5 text-xs font-medium"
+        style={{ background: 'color-mix(in srgb, #ef4444 15%, var(--bg-elevated))', color: '#ef4444' }}
+      >
         {t('approval.riskHigh')}
       </span>
-    )
+    );
   }
   if (!security || security === 'allowlist') {
     return (
-      <span className="rounded px-1.5 py-0.5 text-xs font-medium" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>
+      <span
+        className="rounded px-1.5 py-0.5 text-xs font-medium"
+        style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}
+      >
         {t('approval.riskMedium')}
       </span>
-    )
+    );
   }
-  return null
+  return null;
 }
 
 function Countdown({ expiresAtMs }: { expiresAtMs: number }) {
-  const { t } = useTranslation()
-  const [remaining, setRemaining] = useState(() => Math.max(0, Math.ceil((expiresAtMs - Date.now()) / 1000)))
+  const { t } = useTranslation();
+  const [remaining, setRemaining] = useState(() => Math.max(0, Math.ceil((expiresAtMs - Date.now()) / 1000)));
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setRemaining(Math.max(0, Math.ceil((expiresAtMs - Date.now()) / 1000)))
-    }, 500)
-    return () => clearInterval(interval)
-  }, [expiresAtMs])
+      setRemaining(Math.max(0, Math.ceil((expiresAtMs - Date.now()) / 1000)));
+    }, 500);
+    return () => clearInterval(interval);
+  }, [expiresAtMs]);
 
-  const pct = Math.min(100, (remaining / 120) * 100)
-  const color = remaining > 60 ? 'var(--accent)' : remaining > 20 ? '#f59e0b' : '#ef4444'
+  const pct = Math.min(100, (remaining / 120) * 100);
+  const color = remaining > 60 ? 'var(--accent)' : remaining > 20 ? '#f59e0b' : '#ef4444';
 
   return (
     <div className="space-y-1">
@@ -49,21 +50,24 @@ function Countdown({ expiresAtMs }: { expiresAtMs: number }) {
         {t('approval.expiresIn', { seconds: remaining })}
       </span>
       <div className="h-1 w-full overflow-hidden rounded-full" style={{ background: 'var(--bg-elevated)' }}>
-        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: color }} />
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${pct}%`, background: color }}
+        />
       </div>
     </div>
-  )
+  );
 }
 
 export default function ApprovalDialog() {
-  const { t } = useTranslation()
-  const pendingApprovals = useApprovalStore((s) => s.pendingApprovals)
-  const resolveApproval = useApprovalStore((s) => s.resolveApproval)
-  const current = pendingApprovals[0]
+  const { t } = useTranslation();
+  const pendingApprovals = useApprovalStore((s) => s.pendingApprovals);
+  const resolveApproval = useApprovalStore((s) => s.resolveApproval);
+  const current = pendingApprovals[0];
 
-  if (!current) return null
+  if (!current) return null;
 
-  const { id, request, expiresAtMs } = current
+  const { id, request, expiresAtMs } = current;
 
   return (
     <Dialog open modal>
@@ -82,12 +86,20 @@ export default function ApprovalDialog() {
 
         <div className="space-y-4">
           <div>
-            <p className="mb-1.5 text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
+            <p
+              className="mb-1.5 text-xs font-medium uppercase tracking-wide"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               {t('approval.command')}
             </p>
             <pre
               className="overflow-x-auto rounded-lg px-3 py-2.5 text-sm font-mono"
-              style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}
+              style={{
+                background: 'var(--bg-elevated)',
+                color: 'var(--text-primary)',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+              }}
             >
               {request.command}
             </pre>
@@ -127,12 +139,15 @@ export default function ApprovalDialog() {
             <Button variant="outline" onClick={() => resolveApproval(id, 'allow-always')}>
               {t('approval.allowAlways')}
             </Button>
-            <Button onClick={() => resolveApproval(id, 'allow-once')} style={{ background: 'var(--accent)', color: '#000' }}>
+            <Button
+              onClick={() => resolveApproval(id, 'allow-once')}
+              style={{ background: 'var(--accent)', color: '#000' }}
+            >
               {t('approval.allowOnce')}
             </Button>
           </div>
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

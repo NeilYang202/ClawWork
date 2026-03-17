@@ -131,7 +131,9 @@ export default function MarkdownContent({
                     src={actualSrc}
                     alt={alt ?? ''}
                     loading="lazy"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
                     className="max-w-full max-h-80 rounded-lg mt-2 cursor-pointer"
                     onClick={() => actualSrc && onImageClick?.(actualSrc)}
                   />

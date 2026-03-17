@@ -22,10 +22,10 @@ jobs:
         include:
           - os: macos-latest
             platform: mac
-            build_args: "--mac --universal"
+            build_args: '--mac --universal'
           - os: windows-latest
             platform: win
-            build_args: "--win --x64"
+            build_args: '--win --x64'
 
     runs-on: ${{ matrix.os }}
     env:

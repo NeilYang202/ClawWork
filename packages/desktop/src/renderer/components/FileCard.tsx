@@ -37,16 +37,10 @@ export default function FileCard({ artifact, taskTitle, selected, onClick }: Fil
           <Icon size={18} className="text-[var(--text-muted)]" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-[var(--text-primary)] truncate">
-            {artifact.name}
-          </p>
-          <p className="text-xs text-[var(--text-muted)] mt-0.5">
-            {formatFileSize(artifact.size)}
-          </p>
+          <p className="text-sm font-medium text-[var(--text-primary)] truncate">{artifact.name}</p>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">{formatFileSize(artifact.size)}</p>
           <div className="flex items-center gap-2 mt-1.5">
-            <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[120px]">
-              {taskTitle}
-            </span>
+            <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[120px]">{taskTitle}</span>
             <span className="text-[10px] text-[var(--text-muted)]">·</span>
             <span className="text-[10px] text-[var(--text-muted)]">
               {formatRelativeTime(new Date(artifact.createdAt))}

@@ -1,146 +1,176 @@
-import { useState, useEffect, useRef, useCallback, useMemo, type MouseEvent } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { Plus, Search, FolderOpen, Settings, Archive, Server, ChevronDown } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { useTaskStore } from '@/stores/taskStore'
-import { useMessageStore } from '@/stores/messageStore'
-import { useUiStore } from '@/stores/uiStore'
-import { useTaskContextMenu, type SessionActions } from '@/components/ContextMenu'
-import SearchResults, { type SearchResult } from '@/components/SearchResults'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { useState, useEffect, useRef, useCallback, useMemo, type MouseEvent } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Plus, Search, FolderOpen, Settings, Archive, Server, ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useTaskStore } from '@/stores/taskStore';
+import { useMessageStore } from '@/stores/messageStore';
+import { useUiStore } from '@/stores/uiStore';
+import { useTaskContextMenu, type SessionActions } from '@/components/ContextMenu';
+import SearchResults, { type SearchResult } from '@/components/SearchResults';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  DropdownMenu, DropdownMenuTrigger,
-  DropdownMenuContent, DropdownMenuItem,
-} from '@/components/ui/dropdown-menu'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import {
-  Dialog, DialogContent, DialogHeader, DialogFooter,
-  DialogTitle, DialogDescription,
-} from '@/components/ui/dialog'
-import TaskItem from './TaskItem'
-import ConnectionStatus from './ConnectionStatus'
-import type { TaskStatus } from '@clawwork/shared'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import TaskItem from './TaskItem';
+import ConnectionStatus from './ConnectionStatus';
+import type { TaskStatus } from '@clawwork/shared';
 
-type ConfirmAction = 'reset' | 'delete' | null
+type ConfirmAction = 'reset' | 'delete' | null;
 
 export default function LeftNav() {
-  const { t } = useTranslation()
-  const tasks = useTaskStore((s) => s.tasks)
-  const activeTaskId = useTaskStore((s) => s.activeTaskId)
-  const startNewTask = useTaskStore((s) => s.startNewTask)
-  const setActiveTask = useTaskStore((s) => s.setActiveTask)
-  const updateTaskStatus = useTaskStore((s) => s.updateTaskStatus)
-  const removeTask = useTaskStore((s) => s.removeTask)
-  const clearMessages = useMessageStore((s) => s.clearMessages)
-  const addMessage = useMessageStore((s) => s.addMessage)
-  const mainView = useUiStore((s) => s.mainView)
-  const setMainView = useUiStore((s) => s.setMainView)
-  const settingsOpen = useUiStore((s) => s.settingsOpen)
-  const setSettingsOpen = useUiStore((s) => s.setSettingsOpen)
-  const gwStatusMap = useUiStore((s) => s.gatewayStatusMap)
-  const gwInfoMap = useUiStore((s) => s.gatewayInfoMap)
-  const hasUpdate = useUiStore((s) => s.hasUpdate)
-  const connectedGateways = Object.values(gwInfoMap).filter((gw) => gwStatusMap[gw.id] === 'connected')
-  const hasMultipleGateways = connectedGateways.length > 1
-  const searchFocusTrigger = useUiStore((s) => s.searchFocusTrigger)
+  const { t } = useTranslation();
+  const tasks = useTaskStore((s) => s.tasks);
+  const activeTaskId = useTaskStore((s) => s.activeTaskId);
+  const startNewTask = useTaskStore((s) => s.startNewTask);
+  const setActiveTask = useTaskStore((s) => s.setActiveTask);
+  const updateTaskStatus = useTaskStore((s) => s.updateTaskStatus);
+  const removeTask = useTaskStore((s) => s.removeTask);
+  const clearMessages = useMessageStore((s) => s.clearMessages);
+  const addMessage = useMessageStore((s) => s.addMessage);
+  const mainView = useUiStore((s) => s.mainView);
+  const setMainView = useUiStore((s) => s.setMainView);
+  const settingsOpen = useUiStore((s) => s.settingsOpen);
+  const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
+  const gwStatusMap = useUiStore((s) => s.gatewayStatusMap);
+  const gwInfoMap = useUiStore((s) => s.gatewayInfoMap);
+  const hasUpdate = useUiStore((s) => s.hasUpdate);
+  const connectedGateways = Object.values(gwInfoMap).filter((gw) => gwStatusMap[gw.id] === 'connected');
+  const hasMultipleGateways = connectedGateways.length > 1;
+  const searchFocusTrigger = useUiStore((s) => s.searchFocusTrigger);
 
-  const gwStatusValues = Object.values(gwStatusMap)
-  const aggregatedGwStatus: 'connected' | 'connecting' | 'disconnected' =
-    gwStatusValues.some((s) => s === 'connected') ? 'connected'
-    : gwStatusValues.some((s) => s === 'connecting') ? 'connecting'
-    : 'disconnected'
+  const gwStatusValues = Object.values(gwStatusMap);
+  const aggregatedGwStatus: 'connected' | 'connecting' | 'disconnected' = gwStatusValues.some((s) => s === 'connected')
+    ? 'connected'
+    : gwStatusValues.some((s) => s === 'connecting')
+      ? 'connecting'
+      : 'disconnected';
 
-  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
-  const [confirmTaskId, setConfirmTaskId] = useState('')
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+  const [confirmTaskId, setConfirmTaskId] = useState('');
 
-  const findTask = (taskId: string) =>
-    useTaskStore.getState().tasks.find((t) => t.id === taskId)
+  const findTask = (taskId: string) => useTaskStore.getState().tasks.find((t) => t.id === taskId);
 
-  const handleCompact = useCallback((taskId: string) => {
-    const task = findTask(taskId)
-    if (!task) return
-    window.clawwork.compactSession(task.gatewayId, task.sessionKey).then((res) => {
-      if (res.ok) addMessage(taskId, 'system', t('session.contextCompacted'))
-    }).catch(() => {})
-  }, [addMessage, t])
+  const handleCompact = useCallback(
+    (taskId: string) => {
+      const task = findTask(taskId);
+      if (!task) return;
+      window.clawwork
+        .compactSession(task.gatewayId, task.sessionKey)
+        .then((res) => {
+          if (res.ok) addMessage(taskId, 'system', t('session.contextCompacted'));
+        })
+        .catch(() => {});
+    },
+    [addMessage, t],
+  );
 
   const handleResetConfirm = useCallback(() => {
-    const task = findTask(confirmTaskId)
-    if (!task) { setConfirmAction(null); return }
-    window.clawwork.resetSession(task.gatewayId, task.sessionKey, 'reset').then((res) => {
-      if (res.ok) {
-        clearMessages(confirmTaskId)
-        addMessage(confirmTaskId, 'system', t('session.contextReset'))
-      }
-    }).catch(() => {})
-    setConfirmAction(null)
-  }, [confirmTaskId, clearMessages, addMessage, t])
+    const task = findTask(confirmTaskId);
+    if (!task) {
+      setConfirmAction(null);
+      return;
+    }
+    window.clawwork
+      .resetSession(task.gatewayId, task.sessionKey, 'reset')
+      .then((res) => {
+        if (res.ok) {
+          clearMessages(confirmTaskId);
+          addMessage(confirmTaskId, 'system', t('session.contextReset'));
+        }
+      })
+      .catch(() => {});
+    setConfirmAction(null);
+  }, [confirmTaskId, clearMessages, addMessage, t]);
 
   const handleDeleteConfirm = useCallback(() => {
-    const task = findTask(confirmTaskId)
+    const task = findTask(confirmTaskId);
     if (task) {
-      window.clawwork.deleteSession(task.gatewayId, task.sessionKey).catch(() => {})
+      window.clawwork.deleteSession(task.gatewayId, task.sessionKey).catch(() => {});
     }
-    clearMessages(confirmTaskId)
-    removeTask(confirmTaskId)
-    setConfirmAction(null)
-  }, [confirmTaskId, clearMessages, removeTask])
+    clearMessages(confirmTaskId);
+    removeTask(confirmTaskId);
+    setConfirmAction(null);
+  }, [confirmTaskId, clearMessages, removeTask]);
 
-  const sessionActions: SessionActions = useMemo(() => ({
-    compact: handleCompact,
-    reset: (taskId: string) => { setConfirmTaskId(taskId); setConfirmAction('reset') },
-    deleteTask: (taskId: string) => { setConfirmTaskId(taskId); setConfirmAction('delete') },
-    isConnected: (taskId: string) => {
-      const task = findTask(taskId)
-      return task ? gwStatusMap[task.gatewayId] === 'connected' : false
-    },
-  }), [handleCompact, gwStatusMap])
+  const sessionActions: SessionActions = useMemo(
+    () => ({
+      compact: handleCompact,
+      reset: (taskId: string) => {
+        setConfirmTaskId(taskId);
+        setConfirmAction('reset');
+      },
+      deleteTask: (taskId: string) => {
+        setConfirmTaskId(taskId);
+        setConfirmAction('delete');
+      },
+      isConnected: (taskId: string) => {
+        const task = findTask(taskId);
+        return task ? gwStatusMap[task.gatewayId] === 'connected' : false;
+      },
+    }),
+    [handleCompact, gwStatusMap],
+  );
 
-  const { items, isOpen, openMenu, closeMenu } = useTaskContextMenu(updateTaskStatus, sessionActions)
-  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
-  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
-  const searchInputRef = useRef<HTMLInputElement>(null)
+  const { items, isOpen, openMenu, closeMenu } = useTaskContextMenu(updateTaskStatus, sessionActions);
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (searchFocusTrigger === 0) return
-    searchInputRef.current?.focus()
-    searchInputRef.current?.select()
-  }, [searchFocusTrigger])
+    if (searchFocusTrigger === 0) return;
+    searchInputRef.current?.focus();
+    searchInputRef.current?.select();
+  }, [searchFocusTrigger]);
 
   useEffect(() => {
-    clearTimeout(timerRef.current)
-    if (!searchQuery.trim()) { setSearchResults([]); return }
+    clearTimeout(timerRef.current);
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
     timerRef.current = setTimeout(async () => {
-      const resp = await window.clawwork.globalSearch(searchQuery)
-      if (resp.ok && resp.results) setSearchResults(resp.results)
-    }, 300)
-    return () => clearTimeout(timerRef.current)
-  }, [searchQuery])
+      const resp = await window.clawwork.globalSearch(searchQuery);
+      if (resp.ok && resp.results) setSearchResults(resp.results);
+    }, 300);
+    return () => clearTimeout(timerRef.current);
+  }, [searchQuery]);
 
   const handleSelectResult = (result: SearchResult): void => {
-    setSearchQuery('')
-    setSearchResults([])
+    setSearchQuery('');
+    setSearchResults([]);
     if (result.type === 'artifact') {
-      setMainView('files')
+      setMainView('files');
     } else {
-      setMainView('chat')
-      const targetId = result.type === 'task' ? result.id : result.taskId
-      if (targetId) setActiveTask(targetId)
+      setMainView('chat');
+      const targetId = result.type === 'task' ? result.id : result.taskId;
+      if (targetId) setActiveTask(targetId);
     }
-  }
+  };
 
   const handleContextMenu = (e: MouseEvent, taskId: string, status: TaskStatus): void => {
-    setMenuPos({ x: e.clientX, y: e.clientY })
-    openMenu(e, taskId, status)
-  }
+    setMenuPos({ x: e.clientX, y: e.clientY });
+    openMenu(e, taskId, status);
+  };
 
-  const visibleTasks = tasks.filter((t) => t.status !== 'archived')
-  const activeTasks = visibleTasks.filter((t) => t.status === 'active')
-  const completedTasks = visibleTasks.filter((t) => t.status === 'completed')
+  const visibleTasks = tasks.filter((t) => t.status !== 'archived');
+  const activeTasks = visibleTasks.filter((t) => t.status === 'active');
+  const completedTasks = visibleTasks.filter((t) => t.status === 'completed');
 
   return (
     <div className="flex flex-col h-full pt-14 relative">
@@ -221,9 +251,7 @@ export default function LeftNav() {
           <ScrollArea className="flex-1 px-4">
             <div className="space-y-0.5">
               {visibleTasks.length === 0 && (
-                <p className="text-xs text-[var(--text-muted)] text-center py-8">
-                  {t('leftNav.emptyHint')}
-                </p>
+                <p className="text-xs text-[var(--text-muted)] text-center py-8">{t('leftNav.emptyHint')}</p>
               )}
               {activeTasks.length > 0 && (
                 <>
@@ -231,8 +259,12 @@ export default function LeftNav() {
                     {t('common.inProgress')} ({activeTasks.length})
                   </p>
                   {activeTasks.map((task) => (
-                    <TaskItem key={task.id} task={task} active={task.id === activeTaskId}
-                      onContextMenu={(e) => handleContextMenu(e, task.id, task.status)} />
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      active={task.id === activeTaskId}
+                      onContextMenu={(e) => handleContextMenu(e, task.id, task.status)}
+                    />
                   ))}
                 </>
               )}
@@ -242,8 +274,12 @@ export default function LeftNav() {
                     {t('common.completed')} ({completedTasks.length})
                   </p>
                   {completedTasks.map((task) => (
-                    <TaskItem key={task.id} task={task} active={task.id === activeTaskId}
-                      onContextMenu={(e) => handleContextMenu(e, task.id, task.status)} />
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      active={task.id === activeTaskId}
+                      onContextMenu={(e) => handleContextMenu(e, task.id, task.status)}
+                    />
                   ))}
                 </>
               )}
@@ -277,9 +313,7 @@ export default function LeftNav() {
                 )}
               >
                 <Settings size={16} className="opacity-60" /> {t('common.settings')}
-                {hasUpdate && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[var(--accent)]" />
-                )}
+                {hasUpdate && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[var(--accent)]" />}
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">
@@ -292,21 +326,36 @@ export default function LeftNav() {
         </div>
       </div>
 
-      <DropdownMenu open={isOpen} onOpenChange={(open) => { if (!open) closeMenu() }}>
+      <DropdownMenu
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) closeMenu();
+        }}
+      >
         <DropdownMenuTrigger className="sr-only" />
-        <DropdownMenuContent
-          style={menuPos ? { position: 'fixed', left: menuPos.x, top: menuPos.y } : undefined}
-        >
+        <DropdownMenuContent style={menuPos ? { position: 'fixed', left: menuPos.x, top: menuPos.y } : undefined}>
           {items.map((item) => (
-            <DropdownMenuItem key={item.label} danger={item.danger} disabled={item.disabled}
-              onClick={() => { item.action(); closeMenu() }}>
+            <DropdownMenuItem
+              key={item.label}
+              danger={item.danger}
+              disabled={item.disabled}
+              onClick={() => {
+                item.action();
+                closeMenu();
+              }}
+            >
               {item.label}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={confirmAction !== null} onOpenChange={(open) => { if (!open) setConfirmAction(null) }}>
+      <Dialog
+        open={confirmAction !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmAction(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -330,5 +379,5 @@ export default function LeftNav() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

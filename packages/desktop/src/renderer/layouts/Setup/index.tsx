@@ -1,91 +1,95 @@
-import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { FolderOpen, Loader2, Server, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { cn } from '@/lib/utils'
-import { motion as motionPresets } from '@/styles/design-tokens'
-import { Button } from '@/components/ui/button'
-import logo from '@/assets/logo.png'
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FolderOpen, Loader2, Server, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
+import { motion as motionPresets } from '@/styles/design-tokens';
+import { Button } from '@/components/ui/button';
+import logo from '@/assets/logo.png';
 
 interface SetupProps {
-  onSetupComplete: () => void
+  onSetupComplete: () => void;
 }
 
-type Step = 'workspace' | 'gateway'
+type Step = 'workspace' | 'gateway';
 
 export default function Setup({ onSetupComplete }: SetupProps) {
-  const { t } = useTranslation()
-  const [step, setStep] = useState<Step>('workspace')
+  const { t } = useTranslation();
+  const [step, setStep] = useState<Step>('workspace');
 
   // Step 1: workspace
-  const [path, setPath] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [path, setPath] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Step 2: gateway
-  const [gwName, setGwName] = useState('Default Gateway')
-  const [gwUrl, setGwUrl] = useState('ws://127.0.0.1:18789')
-  const [gwToken, setGwToken] = useState('')
-  const [gwPassword, setGwPassword] = useState('')
-  const [testing, setTesting] = useState(false)
-  const [testResult, setTestResult] = useState<'success' | 'fail' | null>(null)
-  const [saving, setSaving] = useState(false)
+  const [gwName, setGwName] = useState('Default Gateway');
+  const [gwUrl, setGwUrl] = useState('ws://127.0.0.1:18789');
+  const [gwToken, setGwToken] = useState('');
+  const [gwPassword, setGwPassword] = useState('');
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<'success' | 'fail' | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    window.clawwork.getDefaultWorkspacePath().then(setPath)
-  }, [])
+    window.clawwork.getDefaultWorkspacePath().then(setPath);
+  }, []);
 
   const handleBrowse = async (): Promise<void> => {
-    const selected = await window.clawwork.browseWorkspace()
+    const selected = await window.clawwork.browseWorkspace();
     if (selected) {
-      setPath(selected)
-      setError('')
+      setPath(selected);
+      setError('');
     }
-  }
+  };
 
   const handleWorkspaceNext = async (): Promise<void> => {
     if (!path.trim()) {
-      setError(t('setup.errSelectDir'))
-      return
+      setError(t('setup.errSelectDir'));
+      return;
     }
-    setLoading(true)
-    setError('')
-    const result = await window.clawwork.setupWorkspace(path.trim())
-    setLoading(false)
+    setLoading(true);
+    setError('');
+    const result = await window.clawwork.setupWorkspace(path.trim());
+    setLoading(false);
     if (result.ok) {
-      setStep('gateway')
-      setError('')
+      setStep('gateway');
+      setError('');
     } else {
-      setError(result.error ?? t('setup.errInitFailed'))
+      setError(result.error ?? t('setup.errInitFailed'));
     }
-  }
+  };
 
   const handleTestGateway = useCallback(async () => {
-    try { new URL(gwUrl) } catch {
-      setTestResult('fail')
-      return
+    try {
+      new URL(gwUrl);
+    } catch {
+      setTestResult('fail');
+      return;
     }
-    setTesting(true)
-    setTestResult(null)
+    setTesting(true);
+    setTestResult(null);
     const res = await window.clawwork.testGateway(gwUrl, {
       token: gwToken || undefined,
       password: gwPassword || undefined,
-    })
-    setTesting(false)
-    setTestResult(res.ok ? 'success' : 'fail')
-  }, [gwUrl, gwToken, gwPassword])
+    });
+    setTesting(false);
+    setTestResult(res.ok ? 'success' : 'fail');
+  }, [gwUrl, gwToken, gwPassword]);
 
   const handleFinish = useCallback(async () => {
     if (!gwName.trim() || !gwUrl.trim()) {
-      setError(t('settings.nameRequired'))
-      return
+      setError(t('settings.nameRequired'));
+      return;
     }
-    try { new URL(gwUrl) } catch {
-      setError(t('settings.invalidUrl'))
-      return
+    try {
+      new URL(gwUrl);
+    } catch {
+      setError(t('settings.invalidUrl'));
+      return;
     }
-    setSaving(true)
-    setError('')
+    setSaving(true);
+    setError('');
     const gw = {
       id: crypto.randomUUID(),
       name: gwName.trim(),
@@ -93,26 +97,26 @@ export default function Setup({ onSetupComplete }: SetupProps) {
       token: gwToken.trim() || undefined,
       password: gwPassword.trim() || undefined,
       isDefault: true,
-    }
-    const res = await window.clawwork.addGateway(gw)
-    setSaving(false)
+    };
+    const res = await window.clawwork.addGateway(gw);
+    setSaving(false);
     if (res.ok) {
-      onSetupComplete()
+      onSetupComplete();
     } else {
-      setError(res.error ?? 'Failed to add gateway')
+      setError(res.error ?? 'Failed to add gateway');
     }
-  }, [gwName, gwUrl, gwToken, gwPassword, onSetupComplete, t])
+  }, [gwName, gwUrl, gwToken, gwPassword, onSetupComplete, t]);
 
   const handleSkipGateway = useCallback(() => {
-    onSetupComplete()
-  }, [onSetupComplete])
+    onSetupComplete();
+  }, [onSetupComplete]);
 
   const inputClass = cn(
     'titlebar-no-drag flex-1 h-10 px-3.5 rounded-lg',
     'bg-[var(--bg-tertiary)] border border-[var(--border)]',
     'text-[var(--text-primary)] placeholder:text-[var(--text-muted)]',
     'outline-none focus:border-[var(--border-accent)] transition-colors',
-  )
+  );
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--bg-primary)]">
@@ -126,12 +130,14 @@ export default function Setup({ onSetupComplete }: SetupProps) {
               <div className="absolute inset-0 scale-[2.5] rounded-full bg-[var(--accent)] opacity-[0.06] blur-2xl" />
               <img src={logo} alt="ClawWork" className="relative w-16 h-16 rounded-2xl shadow-[var(--glow-accent)]" />
             </div>
-            <h1 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight">
-              {t('setup.welcome')}
-            </h1>
+            <h1 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight">{t('setup.welcome')}</h1>
             <p className="text-[var(--text-muted)] leading-relaxed text-sm">
               {step === 'workspace' ? (
-                <>{t('setup.desc1')}<br />{t('setup.desc2')}</>
+                <>
+                  {t('setup.desc1')}
+                  <br />
+                  {t('setup.desc2')}
+                </>
               ) : (
                 t('setup.gatewayDesc')
               )}
@@ -142,21 +148,25 @@ export default function Setup({ onSetupComplete }: SetupProps) {
           <div className="flex items-center justify-center gap-2">
             {(['workspace', 'gateway'] as const).map((s, i) => (
               <div key={s} className="flex items-center gap-2">
-                <div className={cn(
-                  'w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-colors',
-                  step === s
-                    ? 'bg-[var(--accent)] text-black'
-                    : s === 'workspace' && step === 'gateway'
-                      ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
-                      : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)]',
-                )}>
+                <div
+                  className={cn(
+                    'w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-colors',
+                    step === s
+                      ? 'bg-[var(--accent)] text-black'
+                      : s === 'workspace' && step === 'gateway'
+                        ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
+                        : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)]',
+                  )}
+                >
                   {s === 'workspace' && step === 'gateway' ? <CheckCircle2 size={14} /> : i + 1}
                 </div>
                 {i === 0 && (
-                  <div className={cn(
-                    'w-8 h-0.5 rounded',
-                    step === 'gateway' ? 'bg-[var(--accent)]' : 'bg-[var(--bg-tertiary)]',
-                  )} />
+                  <div
+                    className={cn(
+                      'w-8 h-0.5 rounded',
+                      step === 'gateway' ? 'bg-[var(--accent)]' : 'bg-[var(--bg-tertiary)]',
+                    )}
+                  />
                 )}
               </div>
             ))}
@@ -182,15 +192,14 @@ export default function Setup({ onSetupComplete }: SetupProps) {
                     <input
                       type="text"
                       value={path}
-                      onChange={(e) => { setPath(e.target.value); setError('') }}
+                      onChange={(e) => {
+                        setPath(e.target.value);
+                        setError('');
+                      }}
                       className={inputClass}
                       placeholder={t('setup.selectDir')}
                     />
-                    <Button
-                      variant="outline"
-                      onClick={handleBrowse}
-                      className="titlebar-no-drag gap-1.5 h-10"
-                    >
+                    <Button variant="outline" onClick={handleBrowse} className="titlebar-no-drag gap-1.5 h-10">
                       <FolderOpen size={15} />
                       {t('setup.browse')}
                     </Button>
@@ -203,9 +212,15 @@ export default function Setup({ onSetupComplete }: SetupProps) {
                   className="titlebar-no-drag w-full h-11 gap-2"
                 >
                   {loading ? (
-                    <><Loader2 size={16} className="animate-spin" />{t('setup.initializing')}</>
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      {t('setup.initializing')}
+                    </>
                   ) : (
-                    <>{t('setup.next')}<ArrowRight size={16} /></>
+                    <>
+                      {t('setup.next')}
+                      <ArrowRight size={16} />
+                    </>
                   )}
                 </Button>
               </motion.div>
@@ -238,7 +253,10 @@ export default function Setup({ onSetupComplete }: SetupProps) {
                     <input
                       type="text"
                       value={gwUrl}
-                      onChange={(e) => { setGwUrl(e.target.value); setTestResult(null) }}
+                      onChange={(e) => {
+                        setGwUrl(e.target.value);
+                        setTestResult(null);
+                      }}
                       placeholder="ws://127.0.0.1:18789"
                       className={cn(inputClass, 'w-full')}
                     />
@@ -248,7 +266,10 @@ export default function Setup({ onSetupComplete }: SetupProps) {
                     <input
                       type="password"
                       value={gwToken}
-                      onChange={(e) => { setGwToken(e.target.value); setTestResult(null) }}
+                      onChange={(e) => {
+                        setGwToken(e.target.value);
+                        setTestResult(null);
+                      }}
                       placeholder={t('settings.tokenPlaceholder')}
                       className={cn(inputClass, 'w-full')}
                     />
@@ -258,14 +279,23 @@ export default function Setup({ onSetupComplete }: SetupProps) {
                     <input
                       type="password"
                       value={gwPassword}
-                      onChange={(e) => { setGwPassword(e.target.value); setTestResult(null) }}
+                      onChange={(e) => {
+                        setGwPassword(e.target.value);
+                        setTestResult(null);
+                      }}
                       placeholder={t('settings.passwordPlaceholder')}
                       className={cn(inputClass, 'w-full')}
                     />
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={handleTestGateway} disabled={testing} className="titlebar-no-drag gap-1.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleTestGateway}
+                      disabled={testing}
+                      className="titlebar-no-drag gap-1.5"
+                    >
                       {testing ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
                       {t('settings.testConnection')}
                     </Button>
@@ -289,13 +319,12 @@ export default function Setup({ onSetupComplete }: SetupProps) {
                     <ArrowLeft size={16} />
                     {t('setup.back')}
                   </Button>
-                  <Button
-                    onClick={handleFinish}
-                    disabled={saving}
-                    className="titlebar-no-drag flex-1 h-11 gap-2"
-                  >
+                  <Button onClick={handleFinish} disabled={saving} className="titlebar-no-drag flex-1 h-11 gap-2">
                     {saving ? (
-                      <><Loader2 size={16} className="animate-spin" />{t('setup.initializing')}</>
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        {t('setup.initializing')}
+                      </>
                     ) : (
                       t('setup.getStarted')
                     )}
@@ -311,11 +340,9 @@ export default function Setup({ onSetupComplete }: SetupProps) {
             )}
           </AnimatePresence>
 
-          {error && (
-            <p className="text-sm text-[var(--danger)] text-center">{error}</p>
-          )}
+          {error && <p className="text-sm text-[var(--danger)] text-center">{error}</p>}
         </motion.div>
       </div>
     </div>
-  )
+  );
 }

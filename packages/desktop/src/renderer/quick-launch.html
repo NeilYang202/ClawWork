@@ -1,209 +1,232 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <meta charset="UTF-8" />
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body {
-      height: 100%;
-      background: transparent;
-      overflow: hidden;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
-
-    .container {
-      display: flex;
-      align-items: center;
-      height: 56px;
-      padding: 0 16px;
-      background: rgba(28, 28, 28, 0.82);
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      margin: 8px;
-      -webkit-backdrop-filter: blur(40px) saturate(180%);
-      backdrop-filter: blur(40px) saturate(180%);
-      box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-      opacity: 0;
-      transform: scale(0.97) translateY(-4px);
-      animation: slideIn 180ms ease-out forwards;
-      transition: box-shadow 200ms ease, border-color 200ms ease;
-    }
-
-    .container.sending {
-      border-color: rgba(15, 253, 13, 0.3);
-      box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.5),
-        0 0 0 1px rgba(15, 253, 13, 0.1) inset,
-        0 0 24px rgba(15, 253, 13, 0.06);
-    }
-
-    @keyframes slideIn {
-      to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .container {
-        animation: none;
-        opacity: 1;
-        transform: none;
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
-    }
+      html,
+      body {
+        height: 100%;
+        background: transparent;
+        overflow: hidden;
+        font-family:
+          'Inter',
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+      }
 
-    .icon {
-      width: 18px;
-      height: 18px;
-      margin-right: 12px;
-      flex-shrink: 0;
-      opacity: 0.6;
-      transition: opacity 200ms ease;
-    }
+      .container {
+        display: flex;
+        align-items: center;
+        height: 56px;
+        padding: 0 16px;
+        background: rgba(28, 28, 28, 0.82);
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        margin: 8px;
+        -webkit-backdrop-filter: blur(40px) saturate(180%);
+        backdrop-filter: blur(40px) saturate(180%);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.5),
+          0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+        opacity: 0;
+        transform: scale(0.97) translateY(-4px);
+        animation: slideIn 180ms ease-out forwards;
+        transition:
+          box-shadow 200ms ease,
+          border-color 200ms ease;
+      }
 
-    .container:focus-within .icon {
-      opacity: 1;
-    }
+      .container.sending {
+        border-color: rgba(15, 253, 13, 0.3);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.5),
+          0 0 0 1px rgba(15, 253, 13, 0.1) inset,
+          0 0 24px rgba(15, 253, 13, 0.06);
+      }
 
-    input {
-      flex: 1;
-      height: 100%;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: #fff;
-      font-size: 15px;
-      font-family: inherit;
-      letter-spacing: -0.01em;
-    }
+      @keyframes slideIn {
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
 
-    input::placeholder {
-      color: rgba(255, 255, 255, 0.3);
-    }
+      @media (prefers-reduced-motion: reduce) {
+        .container {
+          animation: none;
+          opacity: 1;
+          transform: none;
+        }
+      }
 
-    .hints {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-      margin-left: 12px;
-    }
+      .icon {
+        width: 18px;
+        height: 18px;
+        margin-right: 12px;
+        flex-shrink: 0;
+        opacity: 0.6;
+        transition: opacity 200ms ease;
+      }
 
-    .hint-group {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-    }
+      .container:focus-within .icon {
+        opacity: 1;
+      }
 
-    .hint-label {
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.18);
-      margin-right: 2px;
-    }
+      input {
+        flex: 1;
+        height: 100%;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: #fff;
+        font-size: 15px;
+        font-family: inherit;
+        letter-spacing: -0.01em;
+      }
 
-    kbd {
-      display: inline-block;
-      padding: 2px 5px;
-      font-size: 10px;
-      font-family: inherit;
-      color: rgba(255, 255, 255, 0.28);
-      background: rgba(255, 255, 255, 0.06);
-      border-radius: 4px;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      line-height: 1.3;
-    }
+      input::placeholder {
+        color: rgba(255, 255, 255, 0.3);
+      }
 
-    .divider {
-      width: 1px;
-      height: 14px;
-      background: rgba(255, 255, 255, 0.06);
-    }
-  </style>
-</head>
-<body>
-  <div class="container" id="container">
-    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="rgba(15,253,13,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-    </svg>
-    <input id="input" type="text" placeholder="Ask anything..." autofocus spellcheck="false" autocomplete="off" />
-    <div class="hints">
-      <div class="hint-group" id="send-hint"></div>
-      <div class="divider"></div>
-      <div class="hint-group">
-        <kbd>Esc</kbd>
+      .hints {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+        margin-left: 12px;
+      }
+
+      .hint-group {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+
+      .hint-label {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.18);
+        margin-right: 2px;
+      }
+
+      kbd {
+        display: inline-block;
+        padding: 2px 5px;
+        font-size: 10px;
+        font-family: inherit;
+        color: rgba(255, 255, 255, 0.28);
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        line-height: 1.3;
+      }
+
+      .divider {
+        width: 1px;
+        height: 14px;
+        background: rgba(255, 255, 255, 0.06);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container" id="container">
+      <svg
+        class="icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="rgba(15,253,13,0.8)"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <input id="input" type="text" placeholder="Ask anything..." autofocus spellcheck="false" autocomplete="off" />
+      <div class="hints">
+        <div class="hint-group" id="send-hint"></div>
+        <div class="divider"></div>
+        <div class="hint-group">
+          <kbd>Esc</kbd>
+        </div>
       </div>
     </div>
-  </div>
-  <script>
-    var input = document.getElementById('input');
-    var container = document.getElementById('container');
-    var sendHint = document.getElementById('send-hint');
-    var sendShortcut = 'enter';
+    <script>
+      var input = document.getElementById('input');
+      var container = document.getElementById('container');
+      var sendHint = document.getElementById('send-hint');
+      var sendShortcut = 'enter';
 
-    function makeKbd(text) {
-      var el = document.createElement('kbd');
-      el.textContent = text;
-      return el;
-    }
-
-    function updateHint() {
-      while (sendHint.firstChild) sendHint.removeChild(sendHint.firstChild);
-      var isMac = navigator.platform.indexOf('Mac') !== -1;
-      if (sendShortcut === 'cmdEnter') {
-        sendHint.appendChild(makeKbd(isMac ? '\u2318' : 'Ctrl'));
-        sendHint.appendChild(makeKbd('\u21B5'));
-      } else {
-        sendHint.appendChild(makeKbd('\u21B5'));
+      function makeKbd(text) {
+        var el = document.createElement('kbd');
+        el.textContent = text;
+        return el;
       }
-    }
 
-    if (window.clawwork) {
-      window.clawwork.getQuickLaunchConfig().then(function(config) {
-        sendShortcut = config.sendShortcut || 'enter';
+      function updateHint() {
+        while (sendHint.firstChild) sendHint.removeChild(sendHint.firstChild);
+        var isMac = navigator.platform.indexOf('Mac') !== -1;
+        if (sendShortcut === 'cmdEnter') {
+          sendHint.appendChild(makeKbd(isMac ? '\u2318' : 'Ctrl'));
+          sendHint.appendChild(makeKbd('\u21B5'));
+        } else {
+          sendHint.appendChild(makeKbd('\u21B5'));
+        }
+      }
+
+      if (window.clawwork) {
+        window.clawwork.getQuickLaunchConfig().then(function (config) {
+          sendShortcut = config.sendShortcut || 'enter';
+          updateHint();
+        });
+      } else {
         updateHint();
+      }
+
+      function flashSend() {
+        container.classList.add('sending');
+        setTimeout(function () {
+          container.classList.remove('sending');
+        }, 300);
+      }
+
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          if (window.clawwork) window.clawwork.quickLaunchHide();
+          return;
+        }
+
+        var shouldSend = false;
+        if (sendShortcut === 'cmdEnter') {
+          shouldSend = e.key === 'Enter' && (e.metaKey || e.ctrlKey);
+        } else {
+          shouldSend = e.key === 'Enter' && !e.shiftKey;
+        }
+
+        if (shouldSend && input.value.trim()) {
+          e.preventDefault();
+          flashSend();
+          var msg = input.value.trim();
+          input.value = '';
+          setTimeout(function () {
+            if (window.clawwork) window.clawwork.quickLaunchSubmit(msg);
+          }, 120);
+        }
       });
-    } else {
-      updateHint();
-    }
 
-    function flashSend() {
-      container.classList.add('sending');
-      setTimeout(function() {
-        container.classList.remove('sending');
-      }, 300);
-    }
-
-    input.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        if (window.clawwork) window.clawwork.quickLaunchHide();
-        return;
-      }
-
-      var shouldSend = false;
-      if (sendShortcut === 'cmdEnter') {
-        shouldSend = e.key === 'Enter' && (e.metaKey || e.ctrlKey);
-      } else {
-        shouldSend = e.key === 'Enter' && !e.shiftKey;
-      }
-
-      if (shouldSend && input.value.trim()) {
-        e.preventDefault();
-        flashSend();
-        var msg = input.value.trim();
-        input.value = '';
-        setTimeout(function() {
-          if (window.clawwork) window.clawwork.quickLaunchSubmit(msg);
-        }, 120);
-      }
-    });
-
-    window.addEventListener('focus', function() {
-      container.style.animation = 'none';
-      void container.offsetHeight;
-      container.style.animation = '';
-      input.focus();
-      input.select();
-    });
-  </script>
-</body>
+      window.addEventListener('focus', function () {
+        container.style.animation = 'none';
+        void container.offsetHeight;
+        container.style.animation = '';
+        input.focus();
+        input.select();
+      });
+    </script>
+  </body>
 </html>

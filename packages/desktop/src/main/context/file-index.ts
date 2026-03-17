@@ -4,9 +4,22 @@ import type { FileIndexEntry } from '@clawwork/shared';
 import { classifyTier, getMimeType } from './file-types.js';
 
 const SKIP_DIRS = new Set([
-  'node_modules', '.git', 'dist', 'build', '__pycache__', '.next',
-  '.venv', 'venv', '.cache', 'coverage', '.idea', '.vscode',
-  '.turbo', '.output', '.nuxt', '.svelte-kit',
+  'node_modules',
+  '.git',
+  'dist',
+  'build',
+  '__pycache__',
+  '.next',
+  '.venv',
+  'venv',
+  '.cache',
+  'coverage',
+  '.idea',
+  '.vscode',
+  '.turbo',
+  '.output',
+  '.nuxt',
+  '.svelte-kit',
 ]);
 
 const ALLOWED_DOT_FILES = new Set(['.env', '.gitignore', '.dockerfile']);
@@ -16,13 +29,7 @@ function isHidden(name: string): boolean {
   return name.startsWith('.') && !ALLOWED_DOT_FILES.has(name.toLowerCase());
 }
 
-function walkDir(
-  dir: string,
-  rootDir: string,
-  results: FileIndexEntry[],
-  depth: number,
-  maxDepth: number,
-): void {
+function walkDir(dir: string, rootDir: string, results: FileIndexEntry[], depth: number, maxDepth: number): void {
   if (depth > maxDepth) return;
 
   let entries: string[];
@@ -68,10 +75,7 @@ function walkDir(
   }
 }
 
-export function scanFolder(
-  folderPath: string,
-  opts?: { maxDepth?: number; query?: string },
-): FileIndexEntry[] {
+export function scanFolder(folderPath: string, opts?: { maxDepth?: number; query?: string }): FileIndexEntry[] {
   const maxDepth = opts?.maxDepth ?? 4;
   const results: FileIndexEntry[] = [];
   walkDir(folderPath, folderPath, results, 0, maxDepth);

@@ -13,10 +13,7 @@ async function adHocSignApp(context, run = execSync, exists = existsSync) {
   if (context.electronPlatformName !== 'darwin') return;
   if (context.appOutDir.endsWith('-temp')) return;
 
-  const appPath = path.join(
-    context.appOutDir,
-    `${context.packager.appInfo.productFilename}.app`,
-  );
+  const appPath = path.join(context.appOutDir, `${context.packager.appInfo.productFilename}.app`);
   const frameworksDir = path.join(appPath, 'Contents', 'Frameworks');
   const entitlements = path.join(__dirname, '..', 'build', 'entitlements.mac.plist');
 

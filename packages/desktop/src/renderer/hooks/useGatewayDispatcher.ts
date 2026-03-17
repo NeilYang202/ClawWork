@@ -1,6 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { parseTaskIdFromSessionKey } from '@clawwork/shared';
-import type { ToolCall, ToolCallStatus, ModelListResponse, AgentListResponse, ToolsCatalog, ExecApprovalRequest, ExecApprovalResolved } from '@clawwork/shared';
+import type {
+  ToolCall,
+  ToolCallStatus,
+  ModelListResponse,
+  AgentListResponse,
+  ToolsCatalog,
+  ExecApprovalRequest,
+  ExecApprovalResolved,
+} from '@clawwork/shared';
 import { toast } from 'sonner';
 import i18n from '../i18n';
 import { useMessageStore } from '../stores/messageStore';
@@ -9,7 +17,11 @@ import { useUiStore } from '../stores/uiStore';
 import { useApprovalStore } from '../stores/approvalStore';
 import { hydrateFromLocal, syncFromGateway } from '../lib/session-sync';
 
-function debugEvent(event: string, data: Record<string, unknown>, extra?: { traceId?: string; feature?: string }): void {
+function debugEvent(
+  event: string,
+  data: Record<string, unknown>,
+  extra?: { traceId?: string; feature?: string },
+): void {
   console.debug(`[debug] ${event}`, data);
   window.clawwork.reportDebugEvent({
     domain: 'renderer',
@@ -45,12 +57,12 @@ interface ChatEventPayload {
 }
 
 interface AgentToolData {
-  phase?: string;        // "update" = running, "result" = done, "error" = error
-  name?: string;         // tool name, e.g. "exec"
-  toolCallId?: string;   // e.g. "call_9GV1FoNq..."
-  meta?: string;         // result description (present on "result" phase)
-  isError?: boolean;     // true if tool errored
-  args?: string;         // tool arguments (sometimes present)
+  phase?: string; // "update" = running, "result" = done, "error" = error
+  name?: string; // tool name, e.g. "exec"
+  toolCallId?: string; // e.g. "call_9GV1FoNq..."
+  meta?: string; // result description (present on "result" phase)
+  isError?: boolean; // true if tool errored
+  args?: string; // tool arguments (sometimes present)
 }
 
 interface AgentToolEvent {
@@ -169,7 +181,11 @@ export function useGatewayEventDispatcher(): void {
     function handleAgentEvent(payload: AgentToolEvent): void {
       const { sessionKey, stream, data } = payload;
       if (stream !== 'tool' || !data || !sessionKey) {
-        debugEvent('renderer.agent.dropped.invalid_payload', { stream, hasData: Boolean(data), hasSessionKey: Boolean(sessionKey) });
+        debugEvent('renderer.agent.dropped.invalid_payload', {
+          stream,
+          hasData: Boolean(data),
+          hasSessionKey: Boolean(sessionKey),
+        });
         return;
       }
 
@@ -217,7 +233,13 @@ export function useGatewayEventDispatcher(): void {
       if (!tc.startedAt) tc.startedAt = new Date().toISOString();
 
       store.upsertToolCall(taskId, tc);
-      debugEvent('renderer.toolcall.upserted', { taskId, sessionKey, toolCallId: tc.id, status: tc.status, name: tc.name });
+      debugEvent('renderer.toolcall.upserted', {
+        taskId,
+        sessionKey,
+        toolCallId: tc.id,
+        status: tc.status,
+        name: tc.name,
+      });
     }
 
     const removeGatewayEvent = window.clawwork.onGatewayEvent(handler);
@@ -239,7 +261,11 @@ export function useGatewayEventDispatcher(): void {
 
     window.clawwork.gatewayStatus().then((statusMap) => {
       for (const [gwId, info] of Object.entries(statusMap)) {
-        const status = info.connected ? 'connected' as const : info.error ? 'disconnected' as const : 'connecting' as const;
+        const status = info.connected
+          ? ('connected' as const)
+          : info.error
+            ? ('disconnected' as const)
+            : ('connecting' as const);
         setGatewayStatusByGateway(gwId, status);
         if (info.connected) {
           connectedGatewaysRef.current.add(gwId);
@@ -270,7 +296,7 @@ export function useGatewayEventDispatcher(): void {
 
     const removeGatewayStatus = window.clawwork.onGatewayStatus((s) => {
       const wasConnected = connectedGatewaysRef.current.has(s.gatewayId);
-      const next = s.connected ? 'connected' as const : s.error ? 'disconnected' as const : 'connecting' as const;
+      const next = s.connected ? ('connected' as const) : s.error ? ('disconnected' as const) : ('connecting' as const);
       setGatewayStatusByGateway(s.gatewayId, next);
 
       if (s.connected && !wasConnected) {
@@ -321,7 +347,10 @@ function extractToolCalls(payload: ChatEventPayload): ToolCall[] {
         id: b.id,
         name: b.name,
         status: 'running',
-        args: typeof b.arguments === 'object' ? b.arguments as Record<string, unknown> : parseToolArgs(typeof b.arguments === 'string' ? b.arguments : undefined),
+        args:
+          typeof b.arguments === 'object'
+            ? (b.arguments as Record<string, unknown>)
+            : parseToolArgs(typeof b.arguments === 'string' ? b.arguments : undefined),
         startedAt: new Date().toISOString(),
       });
     }

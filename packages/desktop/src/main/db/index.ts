@@ -78,9 +78,8 @@ export function initDatabase(workspacePath: string): void {
     'ALTER TABLE tasks ADD COLUMN context_tokens INTEGER',
   ]) {
     try {
-      sqlite.exec(sql)
-    } catch {
-    }
+      sqlite.exec(sql);
+    } catch {}
   }
 
   initFTS(sqlite);

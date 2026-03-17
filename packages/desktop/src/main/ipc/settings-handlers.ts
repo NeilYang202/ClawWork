@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain } from 'electron';
 import { readConfig, updateConfig, writeConfig, buildGatewayAuth } from '../workspace/config.js';
 import type { AppConfig, GatewayServerConfig } from '../workspace/config.js';
-import { getGatewayClient, getAllGatewayClients, addGateway, removeGateway } from '../ws/index.js';
+import { getGatewayClient, addGateway, removeGateway } from '../ws/index.js';
 import { GatewayClient } from '../ws/gateway-client.js';
 import type { GatewayAuth } from '@clawwork/shared';
 
@@ -15,15 +15,12 @@ export function registerSettingsHandlers(): void {
     return readConfig();
   });
 
-  ipcMain.handle(
-    'settings:update',
-    (_event, partial: Partial<AppConfig>): { ok: boolean; config: AppConfig } => {
-      // Strip gateway fields — must use dedicated gateway handlers
-      const { gateways: _g, defaultGatewayId: _d, ...safePartial } = partial;
-      const config = updateConfig(safePartial);
-      return { ok: true, config };
-    },
-  );
+  ipcMain.handle('settings:update', (_event, partial: Partial<AppConfig>): { ok: boolean; config: AppConfig } => {
+    // Strip gateway fields — must use dedicated gateway handlers
+    const { gateways: _g, defaultGatewayId: _d, ...safePartial } = partial;
+    const config = updateConfig(safePartial);
+    return { ok: true, config };
+  });
 
   ipcMain.handle('settings:add-gateway', async (_event, gateway: GatewayServerConfig) => {
     const config = readConfig() ?? { workspacePath: '', gateways: [] };
@@ -42,7 +39,7 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle('settings:remove-gateway', async (_event, gatewayId: string) => {
     const config = readConfig();
     if (!config) return { ok: false, error: 'no config' };
-    config.gateways = config.gateways.filter(g => g.id !== gatewayId);
+    config.gateways = config.gateways.filter((g) => g.id !== gatewayId);
     if (config.defaultGatewayId === gatewayId) {
       config.defaultGatewayId = config.gateways[0]?.id;
     }
@@ -51,20 +48,23 @@ export function registerSettingsHandlers(): void {
     return { ok: true };
   });
 
-  ipcMain.handle('settings:update-gateway', async (_event, gatewayId: string, partial: Partial<GatewayServerConfig>) => {
-    const config = readConfig();
-    if (!config) return { ok: false, error: 'no config' };
-    const idx = config.gateways.findIndex(g => g.id === gatewayId);
-    if (idx === -1) return { ok: false, error: 'gateway not found' };
-    config.gateways[idx] = { ...config.gateways[idx], ...partial };
-    writeConfig(config);
-    const client = getGatewayClient(gatewayId);
-    if (client) {
-      const gw = config.gateways[idx];
-      client.updateConfig({ url: gw.url, auth: buildGatewayAuth(gw) });
-    }
-    return { ok: true, gateway: config.gateways[idx] };
-  });
+  ipcMain.handle(
+    'settings:update-gateway',
+    async (_event, gatewayId: string, partial: Partial<GatewayServerConfig>) => {
+      const config = readConfig();
+      if (!config) return { ok: false, error: 'no config' };
+      const idx = config.gateways.findIndex((g) => g.id === gatewayId);
+      if (idx === -1) return { ok: false, error: 'gateway not found' };
+      config.gateways[idx] = { ...config.gateways[idx], ...partial };
+      writeConfig(config);
+      const client = getGatewayClient(gatewayId);
+      if (client) {
+        const gw = config.gateways[idx];
+        client.updateConfig({ url: gw.url, auth: buildGatewayAuth(gw) });
+      }
+      return { ok: true, gateway: config.gateways[idx] };
+    },
+  );
 
   ipcMain.handle('settings:set-default-gateway', async (_event, gatewayId: string) => {
     const config = readConfig();
@@ -78,7 +78,11 @@ export function registerSettingsHandlers(): void {
   });
 
   ipcMain.handle('settings:test-gateway', async (_event, url: string, auth: { token?: string; password?: string }) => {
-    const testAuth: GatewayAuth = auth.token ? { token: auth.token } : auth.password ? { password: auth.password } : { token: '' };
+    const testAuth: GatewayAuth = auth.token
+      ? { token: auth.token }
+      : auth.password
+        ? { password: auth.password }
+        : { token: '' };
     const testClient = new GatewayClient(
       { id: `test-${Date.now()}`, name: 'test', url, auth: testAuth },
       { noReconnect: true },
