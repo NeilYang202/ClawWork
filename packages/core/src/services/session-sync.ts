@@ -135,7 +135,10 @@ export function createSessionSync(deps: SessionSyncDeps) {
             console.warn('[sync] hydrateFromLocal failed for task', t.id, err);
           }
         }
-      })();
+      })().catch((err) => {
+        hydrationPromise = null;
+        throw err;
+      });
     }
     await hydrationPromise;
   }
