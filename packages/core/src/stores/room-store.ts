@@ -106,7 +106,9 @@ export function createRoomStore(deps: RoomStoreDeps) {
         }
 
         updateRoom(taskId, { conductorReady: true }, set);
-        deps.persistRoom({ taskId, status: 'active', conductorReady: true }).catch(() => {});
+        deps.persistRoom({ taskId, status: 'active', conductorReady: true }).catch((err) => {
+          console.warn('[room-store] persistRoom failed:', err);
+        });
         return true;
       } catch (err) {
         console.warn('[room-store] initConductor failed:', err);
@@ -151,7 +153,9 @@ export function createRoomStore(deps: RoomStoreDeps) {
       updateRoom(taskId, { status }, set);
       const room = get().rooms[taskId];
       if (room) {
-        deps.persistRoom({ taskId, status, conductorReady: room.conductorReady }).catch(() => {});
+        deps.persistRoom({ taskId, status, conductorReady: room.conductorReady }).catch((err) => {
+          console.warn('[room-store] persistRoom failed:', err);
+        });
       }
     },
 
@@ -181,7 +185,9 @@ export function createRoomStore(deps: RoomStoreDeps) {
           subagentKeyMap: { ...s.subagentKeyMap, [subagentKey]: taskId },
         };
       });
-      deps.persistPerformer({ taskId, ...performer }).catch(() => {});
+      deps.persistPerformer({ taskId, ...performer }).catch((err) => {
+        console.warn('[room-store] persistPerformer failed:', err);
+      });
     },
 
     verifyCandidates: async (taskId, gatewayId) => {
