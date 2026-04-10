@@ -75,6 +75,7 @@ export default function FileBrowser() {
   const setHighlightedMessage = useMessageStore((s) => s.setHighlightedMessage);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestIdRef = useRef(0);
 
   const [fileMenu, setFileMenu] = useState<FileMenuState>(null);
 
@@ -149,10 +150,12 @@ export default function FileBrowser() {
       return;
     }
     setIsSearching(true);
+    const requestId = ++requestIdRef.current;
     debounceRef.current = setTimeout(() => {
       window.clawwork
         .searchArtifacts(searchQuery)
         .then((res) => {
+          if (requestIdRef.current !== requestId) return;
           setIsSearching(false);
           if (res.ok && res.result) {
             setSearchResults(res.result as unknown as ArtifactSearchResult[]);
@@ -161,6 +164,7 @@ export default function FileBrowser() {
           }
         })
         .catch(() => {
+          if (requestIdRef.current !== requestId) return;
           setIsSearching(false);
           setSearchResults([]);
         });
