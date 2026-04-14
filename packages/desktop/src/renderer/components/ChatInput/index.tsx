@@ -3,6 +3,7 @@ import {
   ChevronDown,
   File,
   FileCode,
+  FileText,
   FolderOpen,
   ListTodo,
   Loader2,
@@ -91,7 +92,8 @@ export default function ChatInput() {
   const mainView = useUiStore((s) => s.mainView);
   const settingsOpen = useUiStore((s) => s.settingsOpen);
 
-  const { pendingImages, setPendingImages, handleFileSelect, removeImage, handlePaste } = useImageAttachments();
+  const { pendingImages, setPendingImages, pendingFiles, setPendingFiles, handleFileSelect, removeImage, removeFile, handlePaste } =
+    useImageAttachments();
 
   const { contextFolders, localFilesForPicker, handleAddContextFolder, handleRemoveContextFolder, loadLocalFiles } =
     useContextFolders();
@@ -225,6 +227,8 @@ export default function ChatInput() {
     textareaRef,
     pendingImages,
     setPendingImages,
+    pendingFiles,
+    setPendingFiles,
     selectedTasks,
     setSelectedTasks,
     selectedArtifacts,
@@ -415,11 +419,11 @@ export default function ChatInput() {
     if (!textarea) return;
     textarea.style.height = 'auto';
     textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
-    setCanSend(Boolean(textarea.value.trim()) || pendingImages.length > 0);
+    setCanSend(Boolean(textarea.value.trim()) || pendingImages.length > 0 || pendingFiles.length > 0);
     if (argPickerVisible) closeArgPicker();
     updateSlashMenu();
     updateMentionPicker();
-  }, [updateSlashMenu, argPickerVisible, closeArgPicker, updateMentionPicker, pendingImages.length]);
+  }, [updateSlashMenu, argPickerVisible, closeArgPicker, updateMentionPicker, pendingImages.length, pendingFiles.length]);
 
   const voiceActive = isVoiceListening || isVoiceTranscribing;
   const disabled = isOffline;
@@ -450,19 +454,19 @@ export default function ChatInput() {
 
   useEffect(() => {
     const textarea = textareaRef.current;
-    setCanSend(Boolean(textarea?.value.trim()) || pendingImages.length > 0);
-  }, [pendingImages.length]);
+    setCanSend(Boolean(textarea?.value.trim()) || pendingImages.length > 0 || pendingFiles.length > 0);
+  }, [pendingImages.length, pendingFiles.length]);
 
   return (
     <div className="flex-shrink-0 px-6 pb-5">
       <div className="max-w-[var(--content-max-width)] mx-auto">
         <AnimatePresence>
-          {pendingImages.length > 0 && (
+          {(pendingImages.length > 0 || pendingFiles.length > 0) && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mb-2 inline-flex max-w-full gap-2 overflow-x-auto overflow-y-visible px-1 pt-2 pb-1"
+              className="mb-2 inline-flex max-w-full items-center gap-2 overflow-x-auto overflow-y-visible px-1 pt-2 pb-1"
             >
               {pendingImages.map((img, i) => (
                 <motion.div
@@ -491,6 +495,15 @@ export default function ChatInput() {
                     <X size={12} />
                   </button>
                 </motion.div>
+              ))}
+              {pendingFiles.map((f, i) => (
+                <SelectionTag
+                  key={`upload-${f.file.name}-${i}`}
+                  icon={<FileText size={14} />}
+                  label={f.file.name}
+                  onRemove={() => removeFile(i)}
+                  variant="muted"
+                />
               ))}
             </motion.div>
           )}

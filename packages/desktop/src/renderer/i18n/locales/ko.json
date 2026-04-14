@@ -37,7 +37,9 @@
     "thinkingLow": "낮음",
     "thinkingMedium": "보통",
     "thinkingMinimal": "최소",
-    "thinkingOff": "끄기"
+    "thinkingOff": "끄기",
+    "unsupportedUploadType": "{{fileName}} type is not supported",
+    "fileTooLarge": "{{fileName}} exceeds 20MB limit"
   },
   "chatMessage": {
     "conductor": "코디네이터",
@@ -762,5 +764,17 @@
     "transcribing": "변환 중...",
     "unsupported": "whisper-cpp를 찾을 수 없습니다. 실행: brew install whisper-cpp, 그 후 ~/models/whisper/에 모델을 다운로드하세요",
     "unsupportedTooltip": "음성 입력에는 whisper-cpp가 필요합니다. 실행: brew install whisper-cpp"
+  },
+  "auth": {
+    "title": "Secure Login",
+    "subtitle": "Sign in to continue to ClawWork",
+    "username": "Username",
+    "password": "Password",
+    "login": "Sign In",
+    "loginWithSso": "Sign In with SSO",
+    "waitingSso": "Waiting for SSO",
+    "ssoHint": "Finish SSO verification in your browser",
+    "loginFailed": "Login failed",
+    "ssoStartFailed": "Failed to start SSO login"
   }
 }

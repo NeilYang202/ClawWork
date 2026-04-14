@@ -37,7 +37,9 @@
     "thinkingLow": "Baixo",
     "thinkingMedium": "Médio",
     "thinkingMinimal": "Mínimo",
-    "thinkingOff": "Desligado"
+    "thinkingOff": "Desligado",
+    "unsupportedUploadType": "{{fileName}} type is not supported",
+    "fileTooLarge": "{{fileName}} exceeds 20MB limit"
   },
   "chatMessage": {
     "conductor": "Coordenador",
@@ -762,5 +764,17 @@
     "transcribing": "Transcrevendo...",
     "unsupported": "whisper-cpp não encontrado. Execute: brew install whisper-cpp, depois baixe um modelo em ~/models/whisper/",
     "unsupportedTooltip": "A entrada de voz requer whisper-cpp. Execute: brew install whisper-cpp"
+  },
+  "auth": {
+    "title": "Secure Login",
+    "subtitle": "Sign in to continue to ClawWork",
+    "username": "Username",
+    "password": "Password",
+    "login": "Sign In",
+    "loginWithSso": "Sign In with SSO",
+    "waitingSso": "Waiting for SSO",
+    "ssoHint": "Finish SSO verification in your browser",
+    "loginFailed": "Login failed",
+    "ssoStartFailed": "Failed to start SSO login"
   }
 }

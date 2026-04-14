@@ -37,7 +37,9 @@
     "thinkingLow": "低",
     "thinkingMedium": "中",
     "thinkingMinimal": "最少",
-    "thinkingOff": "關閉"
+    "thinkingOff": "關閉",
+    "unsupportedUploadType": "{{fileName}} type is not supported",
+    "fileTooLarge": "{{fileName}} exceeds 20MB limit"
   },
   "chatMessage": {
     "conductor": "協調者",
@@ -762,5 +764,17 @@
     "transcribing": "轉錄中…",
     "unsupported": "找不到 whisper-cpp。請執行：brew install whisper-cpp，然後下載模型至 ~/models/whisper/",
     "unsupportedTooltip": "語音輸入需要 whisper-cpp。請執行：brew install whisper-cpp"
+  },
+  "auth": {
+    "title": "Secure Login",
+    "subtitle": "Sign in to continue to ClawWork",
+    "username": "Username",
+    "password": "Password",
+    "login": "Sign In",
+    "loginWithSso": "Sign In with SSO",
+    "waitingSso": "Waiting for SSO",
+    "ssoHint": "Finish SSO verification in your browser",
+    "loginFailed": "Login failed",
+    "ssoStartFailed": "Failed to start SSO login"
   }
 }

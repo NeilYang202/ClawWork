@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { PendingImage } from './types';
-import { processImageFiles } from './utils';
+import type { PendingImage, PendingUploadFile } from './types';
+import { processImageFiles, processUploadFiles } from './utils';
 
 export function useImageAttachments() {
   const { t } = useTranslation();
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<PendingUploadFile[]>([]);
 
   useEffect(() => {
     return () => {
@@ -18,10 +19,9 @@ export function useImageAttachments() {
     (e: ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files;
       if (!files?.length) return;
-      const accepted = processImageFiles(Array.from(files), t);
-      if (accepted.length) {
-        setPendingImages((prev) => [...prev, ...accepted]);
-      }
+      const accepted = processUploadFiles(Array.from(files), t);
+      if (accepted.images.length) setPendingImages((prev) => [...prev, ...accepted.images]);
+      if (accepted.files.length) setPendingFiles((prev) => [...prev, ...accepted.files]);
       e.target.value = '';
     },
     [t],
@@ -33,6 +33,10 @@ export function useImageAttachments() {
       if (removed) URL.revokeObjectURL(removed.previewUrl);
       return prev.filter((_, i) => i !== index);
     });
+  }, []);
+
+  const removeFile = useCallback((index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   const handlePaste = useCallback(
@@ -59,5 +63,14 @@ export function useImageAttachments() {
     [t],
   );
 
-  return { pendingImages, setPendingImages, handleFileSelect, removeImage, handlePaste };
+  return {
+    pendingImages,
+    setPendingImages,
+    pendingFiles,
+    setPendingFiles,
+    handleFileSelect,
+    removeImage,
+    removeFile,
+    handlePaste,
+  };
 }

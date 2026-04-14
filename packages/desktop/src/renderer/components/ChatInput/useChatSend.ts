@@ -28,7 +28,7 @@ import { useUiStore } from '../../stores/uiStore';
 import { useRoomStore } from '../../stores/roomStore';
 import { useTeamStore } from '../../stores/teamStore';
 import { composer } from '../../platform';
-import type { PendingImage } from './types';
+import type { PendingImage, PendingUploadFile } from './types';
 import type { ThinkingLevel } from './constants';
 import { GATEWAY_INJECTED_MODEL, EMPTY_MODELS_CATALOG, MAX_TEXT_TOTAL, MENTION_ALL_AGENT_ID } from './constants';
 import { getModelLabel, readAsBase64 } from './utils';
@@ -37,6 +37,8 @@ interface UseChatSendOpts {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
   pendingImages: PendingImage[];
   setPendingImages: Dispatch<SetStateAction<PendingImage[]>>;
+  pendingFiles: PendingUploadFile[];
+  setPendingFiles: Dispatch<SetStateAction<PendingUploadFile[]>>;
   selectedTasks: Task[];
   setSelectedTasks: Dispatch<SetStateAction<Task[]>>;
   selectedArtifacts: Artifact[];
@@ -57,6 +59,8 @@ export function useChatSend(opts: UseChatSendOpts) {
     textareaRef,
     pendingImages,
     setPendingImages,
+    pendingFiles,
+    setPendingFiles,
     selectedTasks,
     setSelectedTasks,
     selectedArtifacts,
@@ -161,7 +165,7 @@ export function useChatSend(opts: UseChatSendOpts) {
     stopVoiceInput();
 
     const content = textarea.value.trim();
-    if (!content && !pendingImages.length) return;
+    if (!content && !pendingImages.length && !pendingFiles.length) return;
 
     const pendingPreset = !activeTask ? useTaskStore.getState().pendingNewTask : null;
     const pendingPresetModel = pendingPreset?.model;
@@ -208,6 +212,7 @@ export function useChatSend(opts: UseChatSendOpts) {
         textarea.style.height = 'auto';
         onComposerCleared?.();
         setPendingImages([]);
+        setPendingFiles([]);
         setSelectedAgents([]);
         setSelectedTasks([]);
         setSelectedArtifacts([]);
@@ -254,11 +259,13 @@ export function useChatSend(opts: UseChatSendOpts) {
     textarea.style.height = 'auto';
     onComposerCleared?.();
     const images = [...pendingImages];
+    const files = [...pendingFiles];
     const taskMentions = [...selectedTasks];
     const artifactMentions = [...selectedArtifacts];
     const localFileMentions = [...selectedLocalFiles];
     const agentMentions = [...selectedAgents];
     setPendingImages([]);
+    setPendingFiles([]);
     setSelectedAgents([]);
     setSelectedTasks([]);
     setSelectedArtifacts([]);
@@ -353,6 +360,12 @@ export function useChatSend(opts: UseChatSendOpts) {
               break;
             }
             localBlocks.push(`<file path="${f.relativePath}">\n${read.content}\n</file>`);
+          } else {
+            extraAttachments.push({
+              mimeType: read.mimeType || 'application/octet-stream',
+              fileName: f.fileName,
+              content: read.content,
+            });
           }
         }
 
@@ -374,13 +387,23 @@ export function useChatSend(opts: UseChatSendOpts) {
             })),
           )
         : [];
-      const allAttachments = [...imageAttachments, ...extraAttachments];
+      const fileAttachments = files.length
+        ? await Promise.all(
+            files.map(async (f) => ({
+              mimeType: f.file.type || 'application/octet-stream',
+              fileName: f.file.name,
+              content: await readAsBase64(f.file),
+            })),
+          )
+        : [];
+      const allAttachments = [...imageAttachments, ...fileAttachments, ...extraAttachments];
 
       const titleHint =
         content ||
         (localFileMentions.length ? `[@${localFileMentions[0].fileName}]` : '') ||
         (taskMentions.length ? `[@${taskMentions[0].title}]` : '') ||
         (artifactMentions.length ? `[@${artifactMentions[0].name}]` : '') ||
+        (files.length ? `[@${files[0].file.name}]` : '') ||
         (images.length ? `[${t('chatInput.image')}]` : '');
 
       const isMentionAll = agentMentions.some((a) => a.agentId === MENTION_ALL_AGENT_ID);
@@ -407,6 +430,7 @@ export function useChatSend(opts: UseChatSendOpts) {
     setProcessing,
     isOffline,
     pendingImages,
+    pendingFiles,
     selectedTasks,
     selectedArtifacts,
     selectedLocalFiles,
@@ -414,6 +438,7 @@ export function useChatSend(opts: UseChatSendOpts) {
     contextFolders,
     stopVoiceInput,
     setPendingImages,
+    setPendingFiles,
     setSelectedTasks,
     setSelectedArtifacts,
     setSelectedLocalFiles,

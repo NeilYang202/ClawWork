@@ -33,6 +33,32 @@ export interface NotificationConfig {
   gatewayDisconnect?: boolean;
 }
 
+export interface AuthProviderConfig {
+  enabled?: boolean;
+  serviceUrl?: string;
+  realm?: string;
+  ssoProvider?: string;
+  adDomain?: string;
+}
+
+export interface AuthSessionConfig {
+  token?: string;
+  refreshToken?: string;
+  expiresAt?: string;
+  userId?: string;
+  userName?: string;
+  email?: string;
+  displayName?: string;
+  provider?: string;
+}
+
+export interface ObsUploadConfig {
+  enabled?: boolean;
+  serviceUrl?: string;
+  bucket?: string;
+  basePath?: string;
+}
+
 export interface AppConfig {
   workspacePath: string;
   theme?: 'dark' | 'light' | 'auto';
@@ -55,6 +81,9 @@ export interface AppConfig {
   zoomLevel?: number;
   devMode?: boolean;
   teamHubRegistries?: TeamHubRegistryConfig[];
+  auth?: AuthProviderConfig;
+  authSession?: AuthSessionConfig;
+  obs?: ObsUploadConfig;
 }
 
 function configFilePath(): string {
@@ -104,6 +133,10 @@ function encryptGatewayCredentials(config: AppConfig): AppConfig {
   }
   clone.bootstrapToken = encryptField(clone.bootstrapToken);
   clone.password = encryptField(clone.password);
+  if (clone.authSession) {
+    clone.authSession.token = encryptField(clone.authSession.token);
+    clone.authSession.refreshToken = encryptField(clone.authSession.refreshToken);
+  }
   return clone;
 }
 
@@ -116,6 +149,10 @@ function decryptGatewayCredentials(config: AppConfig): AppConfig {
   }
   clone.bootstrapToken = decryptField(clone.bootstrapToken);
   clone.password = decryptField(clone.password);
+  if (clone.authSession) {
+    clone.authSession.token = decryptField(clone.authSession.token);
+    clone.authSession.refreshToken = decryptField(clone.authSession.refreshToken);
+  }
   return clone;
 }
 

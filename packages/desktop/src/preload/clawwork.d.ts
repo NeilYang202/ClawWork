@@ -109,6 +109,36 @@ interface NotificationSettings {
   gatewayDisconnect?: boolean;
 }
 
+interface AuthSettings {
+  enabled?: boolean;
+  serviceUrl?: string;
+  realm?: string;
+  ssoProvider?: string;
+  adDomain?: string;
+}
+
+interface ObsSettings {
+  enabled?: boolean;
+  serviceUrl?: string;
+  bucket?: string;
+  basePath?: string;
+}
+
+interface AuthStatus {
+  authenticated: boolean;
+  user?: {
+    userId?: string;
+    userName?: string;
+    email?: string;
+    displayName?: string;
+    provider?: string;
+  };
+  expiresAt?: string;
+  authEnabled: boolean;
+  ssoEnabled: boolean;
+  serviceConfigured: boolean;
+}
+
 interface AppSettings {
   workspacePath: string;
   theme?: 'dark' | 'light' | 'auto';
@@ -131,6 +161,8 @@ interface AppSettings {
   rightPanelShortcut?: 'Period' | 'BracketRight';
   devMode?: boolean;
   teamHubRegistries?: Array<{ id: string; url: string; isOfficial: boolean }>;
+  auth?: AuthSettings;
+  obs?: ObsSettings;
 }
 
 export type VoicePermissionStatus = 'granted' | 'not-determined' | 'denied' | 'unsupported';
@@ -240,6 +272,13 @@ export interface ClawWorkAPI {
   chatHistory: (gatewayId: string, sessionKey: string, limit?: number) => Promise<IpcResult>;
   listSessions: (gatewayId: string) => Promise<IpcResult>;
   abortChat: (gatewayId: string, sessionKey: string) => Promise<IpcResult>;
+  getAuthStatus: () => Promise<AuthStatus>;
+  loginWithPassword: (username: string, password: string) => Promise<IpcResult<AuthStatus>>;
+  startSsoLogin: () => Promise<
+    IpcResult<{ verificationUri: string; userCode?: string; deviceCode?: string; expiresIn?: number; intervalMs?: number }>
+  >;
+  pollSsoLogin: (deviceCode: string) => Promise<IpcResult<{ done: boolean; status?: AuthStatus }>>;
+  logout: () => Promise<IpcResult<AuthStatus>>;
 
   listModels: (gatewayId: string) => Promise<IpcResult>;
   listAgents: (gatewayId: string) => Promise<IpcResult>;

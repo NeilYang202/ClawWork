@@ -15,10 +15,14 @@ import type {
 } from '@clawwork/shared';
 import { getDebugLogger } from '../debug/index.js';
 import type { GatewayClient } from '../ws/gateway-client.js';
+import { assertAuthToken, getAuthStatus } from '../auth/session.js';
+import { buildUploadInjection, uploadAttachmentsToObs } from '../obs/upload.js';
+import type { UploadedFileRef } from '../obs/upload.js';
 
 async function gatewayRpc(
   gatewayId: string,
   fn: (gw: GatewayClient) => Promise<Record<string, unknown> | void>,
+  opts?: { requireAuth?: boolean },
 ): Promise<{
   ok: boolean;
   result?: Record<string, unknown>;
@@ -26,6 +30,10 @@ async function gatewayRpc(
   errorCode?: string;
   errorDetails?: Record<string, unknown>;
 }> {
+  if (opts?.requireAuth !== false) {
+    const auth = assertAuthToken();
+    if (!auth.ok) return { ok: false, error: auth.error, errorCode: auth.errorCode };
+  }
   const gw = getGatewayClient(gatewayId);
   if (!gw?.isConnected) return { ok: false, error: 'gateway not connected', errorCode: 'GATEWAY_NOT_CONNECTED' };
   try {
@@ -84,6 +92,7 @@ interface ChatHistoryPayload {
 }
 
 const INTERNAL_ASSISTANT_MARKERS = new Set(['NO_REPLY']);
+const uploadedRefsBySession = new Map<string, UploadedFileRef[]>();
 
 /** Parsed tool call for transport to renderer */
 interface ParsedToolCall {
@@ -108,6 +117,10 @@ export function registerWsHandlers(): void {
         attachments?: ChatAttachment[];
       },
     ) => {
+      const authGuard = assertAuthToken();
+      if (!authGuard.ok) {
+        return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
+      }
       const taskId = parseTaskIdFromSessionKey(payload.sessionKey) ?? undefined;
       getDebugLogger().info({
         domain: 'ipc',
@@ -130,7 +143,25 @@ export function registerWsHandlers(): void {
         return { ok: false, error: 'gateway not connected', errorCode: 'GATEWAY_NOT_CONNECTED' };
       }
       try {
-        await gw.sendChatMessage(payload.sessionKey, payload.content, payload.attachments);
+        let contentToSend = payload.content;
+        const attachments = payload.attachments ?? [];
+        const config = readConfig();
+        const uploaded = await uploadAttachmentsToObs({
+          obs: config?.obs,
+          gatewayId: payload.gatewayId,
+          sessionKey: payload.sessionKey,
+          attachments,
+          token: authGuard.token || undefined,
+        });
+        const previous = uploadedRefsBySession.get(payload.sessionKey) ?? [];
+        const merged = uploaded.length > 0 ? [...previous, ...uploaded] : previous;
+        if (uploaded.length > 0) uploadedRefsBySession.set(payload.sessionKey, merged);
+        const injection = buildUploadInjection(merged);
+        if (injection) {
+          contentToSend = `${injection}\n\n${contentToSend}`;
+        }
+
+        await gw.sendChatMessage(payload.sessionKey, contentToSend, payload.attachments);
         getDebugLogger().info({
           domain: 'ipc',
           event: 'ipc.ws.send-message.completed',
@@ -166,6 +197,8 @@ export function registerWsHandlers(): void {
         limit?: number;
       },
     ) => {
+      const authGuard = assertAuthToken();
+      if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
       const gw = getGatewayClient(payload.gatewayId);
       if (!gw?.isConnected) {
         return { ok: false, error: 'gateway not connected' };
@@ -188,6 +221,8 @@ export function registerWsHandlers(): void {
         gatewayId: string;
       },
     ) => {
+      const authGuard = assertAuthToken();
+      if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
       const gw = getGatewayClient(payload.gatewayId);
       if (!gw?.isConnected) {
         return { ok: false, error: 'gateway not connected' };
@@ -203,6 +238,8 @@ export function registerWsHandlers(): void {
   );
 
   ipcMain.handle('ws:list-sessions-by-spawner', async (_event, payload: { gatewayId: string; spawnedBy: string }) => {
+    const authGuard = assertAuthToken();
+    if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
     const gw = getGatewayClient(payload.gatewayId);
     if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
     try {
@@ -216,6 +253,8 @@ export function registerWsHandlers(): void {
   ipcMain.handle(
     'ws:create-session',
     async (_event, payload: { gatewayId: string; key: string; agentId: string; message?: string }) => {
+      const authGuard = assertAuthToken();
+      if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
       const gw = getGatewayClient(payload.gatewayId);
       if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
       try {
@@ -232,6 +271,8 @@ export function registerWsHandlers(): void {
   );
 
   ipcMain.handle('ws:gateway-status', () => {
+    const auth = getAuthStatus();
+    if (auth.authEnabled && !auth.authenticated) return {};
     const clients = getAllGatewayClients();
     const statusMap: Record<string, { connected: boolean; name: string; error?: string; serverVersion?: string }> = {};
     for (const [id, client] of clients) {
@@ -246,6 +287,8 @@ export function registerWsHandlers(): void {
   });
 
   ipcMain.handle('ws:sync-sessions', async () => {
+    const authGuard = assertAuthToken();
+    if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
     const clients = getAllGatewayClients();
     getDebugLogger().info({
       domain: 'ipc',
@@ -381,6 +424,8 @@ export function registerWsHandlers(): void {
   });
 
   ipcMain.handle('ws:models-list', async (_event, payload: { gatewayId: string }) => {
+    const authGuard = assertAuthToken();
+    if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
     const gw = getGatewayClient(payload.gatewayId);
     if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
     try {
@@ -477,6 +522,8 @@ export function registerWsHandlers(): void {
   );
 
   ipcMain.handle('ws:list-gateways', async () => {
+    const auth = getAuthStatus();
+    if (auth.authEnabled && !auth.authenticated) return [];
     const config = readConfig();
     const clients = getAllGatewayClients();
     return (config?.gateways ?? []).map((gw) => ({
@@ -486,6 +533,8 @@ export function registerWsHandlers(): void {
   });
 
   ipcMain.handle('ws:abort-chat', async (_event, payload: { gatewayId: string; sessionKey: string }) => {
+    const authGuard = assertAuthToken();
+    if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
     const gw = getGatewayClient(payload.gatewayId);
     if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
     try {
@@ -629,6 +678,7 @@ export function registerWsHandlers(): void {
       if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
       try {
         await gw.resetSession(payload.sessionKey, payload.reason);
+        uploadedRefsBySession.delete(payload.sessionKey);
         return { ok: true };
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'unknown error';
@@ -650,6 +700,7 @@ export function registerWsHandlers(): void {
       if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
       try {
         await gw.deleteSession(payload.sessionKey, true);
+        uploadedRefsBySession.delete(payload.sessionKey);
         return { ok: true };
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'unknown error';
@@ -681,6 +732,8 @@ export function registerWsHandlers(): void {
   );
 
   ipcMain.handle('ws:reconnect-gateway', (_event, payload: { gatewayId: string }) => {
+    const authGuard = assertAuthToken();
+    if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
     reconnectGateway(payload.gatewayId);
     return { ok: true };
   });

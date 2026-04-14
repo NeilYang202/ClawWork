@@ -29,6 +29,12 @@ function buildApi(): ClawWorkAPI {
     syncSessions: () => ipcRenderer.invoke('ws:sync-sessions'),
     abortChat: (gatewayId: string, sessionKey: string) =>
       ipcRenderer.invoke('ws:abort-chat', { gatewayId, sessionKey }),
+    getAuthStatus: () => ipcRenderer.invoke('auth:status'),
+    loginWithPassword: (username: string, password: string) =>
+      ipcRenderer.invoke('auth:login-password', { username, password }),
+    startSsoLogin: () => ipcRenderer.invoke('auth:sso-start'),
+    pollSsoLogin: (deviceCode: string) => ipcRenderer.invoke('auth:sso-poll', { deviceCode }),
+    logout: () => ipcRenderer.invoke('auth:logout'),
     listGateways: () => ipcRenderer.invoke('ws:list-gateways'),
     listModels: (gatewayId: string) => ipcRenderer.invoke('ws:models-list', { gatewayId }),
     listAgents: (gatewayId: string) => ipcRenderer.invoke('ws:agents-list', { gatewayId }),

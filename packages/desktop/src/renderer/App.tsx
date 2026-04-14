@@ -6,6 +6,7 @@ import MainArea from './layouts/MainArea';
 import RightPanel from './layouts/RightPanel';
 import Setup from './layouts/Setup';
 import Settings from './layouts/Settings';
+import Login from './layouts/Login';
 import ApprovalDialog from './components/ApprovalDialog';
 import CommandPalette from './components/CommandPalette';
 import { useUiStore } from './stores/uiStore';
@@ -23,6 +24,7 @@ import AmbientShell from '@/components/ambient/AmbientShell';
 export default function App() {
   const [ready, setReady] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false);
+  const [needsLogin, setNeedsLogin] = useState(false);
 
   const rightPanelOpen = useUiStore((s) => s.rightPanelOpen);
   const toggleRightPanel = useUiStore((s) => s.toggleRightPanel);
@@ -77,19 +79,25 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    window.clawwork
-      .isWorkspaceConfigured()
-      .then((configured) => {
-        if (configured) {
-          setReady(true);
-        } else {
+    const bootstrap = async (): Promise<void> => {
+      try {
+        const configured = await window.clawwork.isWorkspaceConfigured();
+        if (!configured) {
           setNeedsSetup(true);
+          return;
         }
-      })
-      .catch((err: unknown) => {
-        console.error('[App] isWorkspaceConfigured failed:', err);
+        const authStatus = await window.clawwork.getAuthStatus();
+        if (authStatus.authEnabled && !authStatus.authenticated) {
+          setNeedsLogin(true);
+          return;
+        }
+        setReady(true);
+      } catch (err: unknown) {
+        console.error('[App] bootstrap failed:', err);
         setNeedsSetup(true);
-      });
+      }
+    };
+    void bootstrap();
   }, []);
 
   useEffect(() => {
@@ -203,6 +211,37 @@ export default function App() {
         <Setup
           onSetupComplete={() => {
             setNeedsSetup(false);
+            void window.clawwork.getAuthStatus().then((status) => {
+              if (status.authEnabled && !status.authenticated) {
+                setNeedsLogin(true);
+                setReady(false);
+              } else {
+                setReady(true);
+              }
+            });
+          }}
+        />
+        <Toaster
+          theme={themeMode === 'auto' ? 'system' : themeMode}
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-primary)',
+            },
+          }}
+        />
+      </TooltipProvider>
+    );
+  }
+
+  if (needsLogin) {
+    return (
+      <TooltipProvider>
+        <Login
+          onAuthenticated={() => {
+            setNeedsLogin(false);
             setReady(true);
           }}
         />
