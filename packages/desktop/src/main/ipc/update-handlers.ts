@@ -38,7 +38,7 @@ async function githubApiFallback(): Promise<UpdateCheckResult> {
 
     try {
       const resp = await net.fetch('https://api.github.com/repos/clawwork-ai/clawwork/releases/latest', {
-        headers: { 'User-Agent': `ClawWork/${currentVersion}` },
+        headers: { 'User-Agent': `Dbcwork/${currentVersion}` },
       });
 
       if (!resp.ok) {

@@ -47,10 +47,77 @@ export default function App() {
   const leftNavShortcut = useUiStore((s) => s.leftNavShortcut);
   const rightPanelShortcut = useUiStore((s) => s.rightPanelShortcut);
   const themeMode = useUiStore((s) => s.theme);
+  const setDefaultGatewayId = useUiStore((s) => s.setDefaultGatewayId);
+  const setGatewayInfoMap = useUiStore((s) => s.setGatewayInfoMap);
+  const setGatewaysLoaded = useUiStore((s) => s.setGatewaysLoaded);
+  const setGatewayStatusByGateway = useUiStore((s) => s.setGatewayStatusByGateway);
+  const setGatewayVersion = useUiStore((s) => s.setGatewayVersion);
+  const setModelCatalogForGateway = useUiStore((s) => s.setModelCatalogForGateway);
+  const setAgentCatalogForGateway = useUiStore((s) => s.setAgentCatalogForGateway);
 
   useGatewayBootstrap();
   useUpdateCheck();
   useTraySync();
+
+  const refreshGatewayList = useCallback(async (): Promise<void> => {
+    try {
+      const [gateways, statusMap] = await Promise.all([
+        window.clawwork.listGateways(),
+        window.clawwork.gatewayStatus(),
+      ]);
+      const defaultGw = gateways.find((gateway) => gateway.isDefault);
+      setDefaultGatewayId(defaultGw?.id ?? gateways[0]?.id ?? null);
+      const infoMap: Record<string, { id: string; name: string; color?: string }> = {};
+      for (const gateway of gateways) {
+        infoMap[gateway.id] = { id: gateway.id, name: gateway.name, color: gateway.color };
+        const status = statusMap[gateway.id];
+        const nextStatus = status
+          ? status.connected
+            ? ('connected' as const)
+            : status.error
+              ? ('disconnected' as const)
+              : ('connecting' as const)
+          : ('connecting' as const);
+        setGatewayStatusByGateway(gateway.id, nextStatus);
+        setGatewayVersion(gateway.id, status?.serverVersion);
+      }
+      await Promise.all(
+        gateways.map(async (gateway) => {
+          const status = statusMap[gateway.id];
+          if (!status?.connected) {
+            void window.clawwork.reconnectGateway(gateway.id);
+            return;
+          }
+          const [modelsRes, agentsRes] = await Promise.all([
+            window.clawwork.listModels(gateway.id),
+            window.clawwork.listAgents(gateway.id),
+          ]);
+          if (modelsRes.ok && modelsRes.result) {
+            const data = modelsRes.result as { models?: import('@clawwork/shared').ModelCatalogEntry[] };
+            if (Array.isArray(data.models)) setModelCatalogForGateway(gateway.id, data.models);
+          }
+          if (agentsRes.ok && agentsRes.result) {
+            const data = agentsRes.result as { agents?: import('@clawwork/shared').AgentInfo[]; defaultId?: string };
+            if (Array.isArray(data.agents)) {
+              setAgentCatalogForGateway(gateway.id, data.agents, data.defaultId ?? data.agents[0]?.id ?? '');
+            }
+          }
+        }),
+      );
+      setGatewayInfoMap(infoMap);
+      setGatewaysLoaded(true);
+    } catch (err) {
+      console.error('[App] refreshGatewayList failed:', err);
+    }
+  }, [
+    setDefaultGatewayId,
+    setGatewayInfoMap,
+    setGatewaysLoaded,
+    setGatewayStatusByGateway,
+    setGatewayVersion,
+    setModelCatalogForGateway,
+    setAgentCatalogForGateway,
+  ]);
 
   const startPanelDrag = useCallback(
     (e: React.MouseEvent, startWidth: number, setWidth: (w: number) => void, dir: 1 | -1) => {
@@ -91,6 +158,7 @@ export default function App() {
           setNeedsLogin(true);
           return;
         }
+        await refreshGatewayList();
         setReady(true);
       } catch (err: unknown) {
         console.error('[App] bootstrap failed:', err);
@@ -98,7 +166,7 @@ export default function App() {
       }
     };
     void bootstrap();
-  }, []);
+  }, [refreshGatewayList]);
 
   useEffect(() => {
     if (!ready) return;
@@ -241,6 +309,7 @@ export default function App() {
       <TooltipProvider>
         <Login
           onAuthenticated={() => {
+            void refreshGatewayList();
             setNeedsLogin(false);
             setReady(true);
           }}

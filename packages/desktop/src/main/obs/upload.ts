@@ -1,6 +1,5 @@
 import type { ChatAttachment } from '@clawwork/shared';
 import { parseTaskIdFromSessionKey } from '@clawwork/shared';
-import type { ObsUploadConfig } from '../workspace/config.js';
 
 export interface UploadedFileRef {
   fileName: string;
@@ -11,6 +10,8 @@ export interface UploadedFileRef {
 
 interface ObsUploadResponse {
   files?: UploadedFileRef[];
+  detail?: string;
+  message?: string;
 }
 
 function normalizeBaseUrl(serviceUrl: string): string {
@@ -18,19 +19,60 @@ function normalizeBaseUrl(serviceUrl: string): string {
 }
 
 export async function uploadAttachmentsToObs(params: {
-  obs: ObsUploadConfig | undefined;
+  serviceUrl: string | undefined;
   gatewayId: string;
   sessionKey: string;
   attachments: ChatAttachment[];
   token?: string;
 }): Promise<UploadedFileRef[]> {
-  const { obs, gatewayId, sessionKey, attachments, token } = params;
-  if (!obs?.enabled) return [];
-  if (!obs.serviceUrl?.trim()) return [];
-  if (!attachments.length) return [];
+  const { serviceUrl, gatewayId, sessionKey, attachments, token } = params;
+  return uploadFilesToObs({
+    serviceUrl,
+    gatewayId,
+    sessionKey,
+    files: attachments.map((item) => ({
+      mimeType: item.mimeType,
+      fileName: item.fileName,
+      content: item.content,
+    })),
+    token,
+  });
+}
 
-  const baseUrl = normalizeBaseUrl(obs.serviceUrl);
-  const taskId = parseTaskIdFromSessionKey(sessionKey) ?? undefined;
+export async function uploadGeneratedFileToObs(params: {
+  serviceUrl: string | undefined;
+  gatewayId: string;
+  sessionKey: string;
+  taskId?: string;
+  fileName: string;
+  mimeType: string;
+  contentBase64: string;
+  token?: string;
+}): Promise<UploadedFileRef[]> {
+  return uploadFilesToObs({
+    serviceUrl: params.serviceUrl,
+    gatewayId: params.gatewayId,
+    sessionKey: params.sessionKey,
+    taskId: params.taskId,
+    files: [{ mimeType: params.mimeType, fileName: params.fileName, content: params.contentBase64 }],
+    token: params.token,
+  });
+}
+
+async function uploadFilesToObs(params: {
+  serviceUrl: string | undefined;
+  gatewayId: string;
+  sessionKey: string;
+  taskId?: string;
+  files: Array<{ mimeType: string; fileName: string; content: string }>;
+  token?: string;
+}): Promise<UploadedFileRef[]> {
+  const { serviceUrl, gatewayId, sessionKey, taskId, files, token } = params;
+  if (!serviceUrl?.trim()) return [];
+  if (!files.length) return [];
+
+  const baseUrl = normalizeBaseUrl(serviceUrl);
+  const resolvedTaskId = taskId ?? parseTaskIdFromSessionKey(sessionKey) ?? undefined;
 
   const response = await fetch(`${baseUrl}/api/obs/upload`, {
     method: 'POST',
@@ -40,17 +82,15 @@ export async function uploadAttachmentsToObs(params: {
     },
     body: JSON.stringify({
       gatewayId,
-      taskId,
+      taskId: resolvedTaskId,
       sessionKey,
-      bucket: obs.bucket,
-      basePath: obs.basePath,
-      files: attachments,
+      files,
     }),
   });
 
   const payload = (await response.json().catch(() => ({}))) as ObsUploadResponse & { error?: string };
   if (!response.ok) {
-    throw new Error(payload.error || `obs upload failed: ${response.status}`);
+    throw new Error(payload.error || payload.detail || payload.message || `obs upload failed: ${response.status}`);
   }
 
   return payload.files ?? [];

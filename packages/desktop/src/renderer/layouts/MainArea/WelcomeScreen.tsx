@@ -23,6 +23,7 @@ type WelcomeTab = 'agent' | 'team' | 'orchestrate';
 export default function WelcomeScreen() {
   const { t } = useTranslation();
   const setMainView = useUiStore((s) => s.setMainView);
+  const [canManageInfra, setCanManageInfra] = useState(true);
   const pendingNewTask = useTaskStore((s) => s.pendingNewTask);
   const activeTaskId = useTaskStore((s) => s.activeTaskId);
   const activeTaskEnsemble = useTaskStore((s) => {
@@ -70,6 +71,12 @@ export default function WelcomeScreen() {
 
   useEffect(() => {
     loadTeams();
+    window.clawwork
+      .getAuthStatus()
+      .then((status) => {
+        setCanManageInfra(!status.authEnabled || Boolean(status.user?.isAdmin));
+      })
+      .catch(() => setCanManageInfra(true));
   }, [loadTeams]);
 
   useEffect(() => {
@@ -172,18 +179,24 @@ export default function WelcomeScreen() {
 
   const visibleTabs = useMemo(() => {
     const all: { id: WelcomeTab; label: string; icon: typeof Bot; showGwDropdown: boolean; visible: boolean }[] = [
-      { id: 'agent', label: t('mainArea.tabAgent'), icon: Bot, showGwDropdown: hasMultipleGw, visible: true },
+      {
+        id: 'agent',
+        label: t('mainArea.tabAgent'),
+        icon: Bot,
+        showGwDropdown: canManageInfra && hasMultipleGw,
+        visible: true,
+      },
       { id: 'team', label: t('mainArea.tabTeam'), icon: Users, showGwDropdown: false, visible: true },
       {
         id: 'orchestrate',
         label: t('mainArea.tabOrchestrate'),
         icon: Sparkles,
-        showGwDropdown: hasMultipleGw,
+        showGwDropdown: canManageInfra && hasMultipleGw,
         visible: hasMultipleAgents,
       },
     ];
     return all.filter((tab) => tab.visible);
-  }, [t, hasMultipleGw, hasMultipleAgents]);
+  }, [t, canManageInfra, hasMultipleGw, hasMultipleAgents]);
 
   return (
     <motion.div
@@ -192,10 +205,8 @@ export default function WelcomeScreen() {
     >
       <div className="relative mb-6">
         <div className="absolute inset-0 scale-[2.5] rounded-full bg-[var(--accent)] opacity-[0.06] blur-2xl" />
-        <img src={logo} alt="ClawWork" className="relative w-16 h-16 rounded-2xl shadow-[var(--glow-accent)]" />
+        <img src={logo} alt="Dbcwork" className="relative w-16 h-16 rounded-2xl shadow-[var(--glow-accent)]" />
       </div>
-      <h3 className="type-page-title mb-6 text-[var(--text-primary)]">ClawWork</h3>
-
       <div className="flex flex-col items-center w-full max-w-lg">
         <div className="flex items-center gap-1 rounded-full bg-[var(--bg-secondary)] p-1.5">
           {visibleTabs.map((tab) => (
@@ -222,10 +233,12 @@ export default function WelcomeScreen() {
               hiddenCount={hiddenAgentCount}
               expanded={agentExpanded}
               onSelect={(id) => {
+                if (!canManageInfra) return;
                 setSelectedAgentId(id);
                 setAgentExpanded(false);
               }}
               onExpand={() => setAgentExpanded(true)}
+              selectable={canManageInfra}
             />
           )}
 
@@ -241,15 +254,6 @@ export default function WelcomeScreen() {
           {activeTab === 'orchestrate' && <OrchestrateTabContent agentCount={agentCatalog.length} />}
         </div>
       </div>
-
-      <a
-        href="https://github.com/clawwork-ai/clawwork"
-        target="_blank"
-        rel="noreferrer"
-        className="type-support mt-10 text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
-      >
-        {t('mainArea.starOnGithub')} ⭐
-      </a>
     </motion.div>
   );
 }
@@ -328,6 +332,7 @@ function AgentTabContent({
   expanded,
   onSelect,
   onExpand,
+  selectable,
 }: {
   agents: { id: string; name?: string; identity?: { emoji?: string; avatarUrl?: string } }[];
   selectedAgentId: string;
@@ -336,6 +341,7 @@ function AgentTabContent({
   expanded: boolean;
   onSelect: (id: string) => void;
   onExpand: () => void;
+  selectable: boolean;
 }) {
   if (agents.length === 0) return null;
 
@@ -351,6 +357,7 @@ function AgentTabContent({
             agent.id === selectedAgentId
               ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
               : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--text-muted)] hover:text-[var(--text-primary)]',
+            !selectable && 'cursor-default opacity-90',
           )}
         >
           <AgentIcon
@@ -368,6 +375,7 @@ function AgentTabContent({
       {!expanded && hiddenCount > 0 && (
         <button
           onClick={onExpand}
+          disabled={!selectable}
           className="type-support inline-flex items-center gap-0.5 rounded-full px-2.5 py-1.5 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors cursor-pointer"
         >
           +{hiddenCount}

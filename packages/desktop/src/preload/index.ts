@@ -30,11 +30,30 @@ function buildApi(): ClawWorkAPI {
     abortChat: (gatewayId: string, sessionKey: string) =>
       ipcRenderer.invoke('ws:abort-chat', { gatewayId, sessionKey }),
     getAuthStatus: () => ipcRenderer.invoke('auth:status'),
+    getAuthPublicConfig: (serviceUrl?: string) => ipcRenderer.invoke('auth:public-config', { serviceUrl }),
     loginWithPassword: (username: string, password: string) =>
       ipcRenderer.invoke('auth:login-password', { username, password }),
     startSsoLogin: () => ipcRenderer.invoke('auth:sso-start'),
     pollSsoLogin: (deviceCode: string) => ipcRenderer.invoke('auth:sso-poll', { deviceCode }),
     logout: () => ipcRenderer.invoke('auth:logout'),
+    getAdminConfig: () => ipcRenderer.invoke('auth:admin-config-get'),
+    updateAdminConfig: (payload: Record<string, unknown>) => ipcRenderer.invoke('auth:admin-config-update', payload),
+    listAdminUsers: () => ipcRenderer.invoke('auth:admin-users-list'),
+    createAdminUser: (payload: {
+      username: string;
+      password: string;
+      email?: string;
+      displayName?: string;
+      isAdmin?: boolean;
+    }) => ipcRenderer.invoke('auth:admin-users-create', payload),
+    updateAdminUser: (payload: {
+      userId: string;
+      password?: string;
+      email?: string;
+      displayName?: string;
+      isAdmin?: boolean;
+      isActive?: boolean;
+    }) => ipcRenderer.invoke('auth:admin-users-update', payload),
     listGateways: () => ipcRenderer.invoke('ws:list-gateways'),
     listModels: (gatewayId: string) => ipcRenderer.invoke('ws:models-list', { gatewayId }),
     listAgents: (gatewayId: string) => ipcRenderer.invoke('ws:agents-list', { gatewayId }),
@@ -416,7 +435,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('clawwork', buildApi());
   } catch (error) {
     throw new Error(
-      `[preload] Failed to expose ClawWork API: ${error instanceof Error ? error.message : String(error)}`,
+      `[preload] Failed to expose Dbcwork API: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 } else {

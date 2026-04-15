@@ -5,6 +5,14 @@ import { getGatewayClient, addGateway, removeGateway } from '../ws/index.js';
 import { GatewayClient } from '../ws/gateway-client.js';
 import { SUPPORTED_LANGUAGE_CODES } from '@clawwork/shared';
 import type { GatewayAuth } from '@clawwork/shared';
+import { getAuthStatus } from '../auth/session.js';
+
+function ensureInfraManageAllowed(): { ok: true } | { ok: false; error: string; errorCode: string } {
+  const status = getAuthStatus();
+  if (!status.authEnabled) return { ok: true };
+  if (status.user?.isAdmin) return { ok: true };
+  return { ok: false, error: 'admin required', errorCode: 'ADMIN_REQUIRED' };
+}
 
 export function registerSettingsHandlers(): void {
   ipcMain.handle('settings:get', (): AppConfig | null => {
@@ -26,6 +34,8 @@ export function registerSettingsHandlers(): void {
   });
 
   ipcMain.handle('settings:add-gateway', async (_event, gateway: GatewayServerConfig) => {
+    const guard = ensureInfraManageAllowed();
+    if (!guard.ok) return guard;
     const config = readConfig() ?? { workspacePath: '', gateways: [] };
     config.gateways.push(gateway);
     if (gateway.isDefault || config.gateways.length === 1) {
@@ -37,6 +47,8 @@ export function registerSettingsHandlers(): void {
   });
 
   ipcMain.handle('settings:remove-gateway', async (_event, gatewayId: string) => {
+    const guard = ensureInfraManageAllowed();
+    if (!guard.ok) return guard;
     const config = readConfig();
     if (!config) return { ok: false, error: 'no config' };
     config.gateways = config.gateways.filter((g) => g.id !== gatewayId);
@@ -51,6 +63,8 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle(
     'settings:update-gateway',
     async (_event, gatewayId: string, partial: Partial<GatewayServerConfig>) => {
+      const guard = ensureInfraManageAllowed();
+      if (!guard.ok) return guard;
       const config = readConfig();
       if (!config) return { ok: false, error: 'no config' };
       const idx = config.gateways.findIndex((g) => g.id === gatewayId);
@@ -67,6 +81,8 @@ export function registerSettingsHandlers(): void {
   );
 
   ipcMain.handle('settings:set-default-gateway', async (_event, gatewayId: string) => {
+    const guard = ensureInfraManageAllowed();
+    if (!guard.ok) return guard;
     const config = readConfig();
     if (!config) return { ok: false, error: 'no config' };
     for (const gw of config.gateways) {

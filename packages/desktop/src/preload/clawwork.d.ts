@@ -132,6 +132,7 @@ interface AuthStatus {
     email?: string;
     displayName?: string;
     provider?: string;
+    isAdmin?: boolean;
   };
   expiresAt?: string;
   authEnabled: boolean;
@@ -139,8 +140,23 @@ interface AuthStatus {
   serviceConfigured: boolean;
 }
 
+interface AuthPublicConfig {
+  ssoEnabled: boolean;
+  ssoProvider?: string;
+}
+
+interface AdminUser {
+  id: string;
+  username: string;
+  email?: string;
+  displayName?: string;
+  isAdmin: boolean;
+  isActive: boolean;
+}
+
 interface AppSettings {
   workspacePath: string;
+  exportPath?: string;
   theme?: 'dark' | 'light' | 'auto';
   density?: 'compact' | 'comfortable' | 'spacious';
   language?: string;
@@ -163,6 +179,11 @@ interface AppSettings {
   teamHubRegistries?: Array<{ id: string; url: string; isOfficial: boolean }>;
   auth?: AuthSettings;
   obs?: ObsSettings;
+  accessControl?: {
+    enabled?: boolean;
+    adminUsers?: string[];
+    bindings?: Array<{ username: string; gatewayId: string; agentId: string }>;
+  };
 }
 
 export type VoicePermissionStatus = 'granted' | 'not-determined' | 'denied' | 'unsupported';
@@ -273,12 +294,37 @@ export interface ClawWorkAPI {
   listSessions: (gatewayId: string) => Promise<IpcResult>;
   abortChat: (gatewayId: string, sessionKey: string) => Promise<IpcResult>;
   getAuthStatus: () => Promise<AuthStatus>;
+  getAuthPublicConfig: (serviceUrl?: string) => Promise<IpcResult<AuthPublicConfig>>;
   loginWithPassword: (username: string, password: string) => Promise<IpcResult<AuthStatus>>;
   startSsoLogin: () => Promise<
-    IpcResult<{ verificationUri: string; userCode?: string; deviceCode?: string; expiresIn?: number; intervalMs?: number }>
+    IpcResult<{
+      verificationUri: string;
+      userCode?: string;
+      deviceCode?: string;
+      expiresIn?: number;
+      intervalMs?: number;
+    }>
   >;
   pollSsoLogin: (deviceCode: string) => Promise<IpcResult<{ done: boolean; status?: AuthStatus }>>;
   logout: () => Promise<IpcResult<AuthStatus>>;
+  getAdminConfig: () => Promise<IpcResult<Record<string, unknown>>>;
+  updateAdminConfig: (payload: Record<string, unknown>) => Promise<IpcResult<Record<string, unknown>>>;
+  listAdminUsers: () => Promise<IpcResult<AdminUser[]>>;
+  createAdminUser: (payload: {
+    username: string;
+    password: string;
+    email?: string;
+    displayName?: string;
+    isAdmin?: boolean;
+  }) => Promise<IpcResult<AdminUser>>;
+  updateAdminUser: (payload: {
+    userId: string;
+    password?: string;
+    email?: string;
+    displayName?: string;
+    isAdmin?: boolean;
+    isActive?: boolean;
+  }) => Promise<IpcResult<AdminUser>>;
 
   listModels: (gatewayId: string) => Promise<IpcResult>;
   listAgents: (gatewayId: string) => Promise<IpcResult>;

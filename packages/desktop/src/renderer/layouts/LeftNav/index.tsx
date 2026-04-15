@@ -9,7 +9,18 @@ import {
   type ReactNode,
 } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Plus, Search, FolderOpen, Settings, Archive, PanelLeftClose, PanelLeftOpen, Clock, Users } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  FolderOpen,
+  Settings,
+  Archive,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Clock,
+  Users,
+  LogOut,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTaskStore } from '@/stores/taskStore';
 import { useMessageStore } from '@/stores/messageStore';
@@ -301,6 +312,13 @@ export default function LeftNav() {
     </>
   );
 
+  const handleLogout = useCallback(() => {
+    window.clawwork
+      .logout()
+      .then(() => window.location.reload())
+      .catch(() => window.location.reload());
+  }, []);
+
   if (leftNavCollapsed) {
     return (
       <div className="flex flex-col h-full items-center py-2 gap-1 overflow-hidden">
@@ -395,6 +413,7 @@ export default function LeftNav() {
               ) : undefined
             }
           />
+          <IconButton icon={LogOut} tooltip={t('auth.logout')} onClick={handleLogout} />
         </div>
 
         {overlays}
@@ -544,6 +563,7 @@ export default function LeftNav() {
               ) : undefined
             }
           />
+          <IconButton icon={LogOut} tooltip={t('auth.logout')} onClick={handleLogout} tooltipSide="top" />
         </div>
       </div>
 

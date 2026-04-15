@@ -55,7 +55,10 @@ const DOC_MIME_PREFIXES = [
 
 const DOC_EXT_RE = /\.(txt|pdf|doc|docx|xls|xlsx|ppt|pptx|csv)$/i;
 
-export function processUploadFiles(files: File[], t: TranslateFn): { images: PendingImage[]; files: PendingUploadFile[] } {
+export function processUploadFiles(
+  files: File[],
+  t: TranslateFn,
+): { images: PendingImage[]; files: PendingUploadFile[] } {
   const images: PendingImage[] = [];
   const docs: PendingUploadFile[] = [];
   for (const file of files) {

@@ -98,7 +98,7 @@ function buildMenu(state: TrayState): Menu {
   }
 
   items.push({ type: 'separator' });
-  items.push({ label: 'Open ClawWork', click: focusMainWindow });
+  items.push({ label: 'Open Dbcwork', click: focusMainWindow });
   items.push({ label: 'Settings', click: openSettings });
   items.push({ type: 'separator' });
   items.push({ label: 'Quit', click: () => app.quit() });
@@ -110,8 +110,14 @@ function createTray(): void {
   if (tray) return;
   const icon = loadIcon();
   tray = new Tray(icon);
-  tray.setToolTip('ClawWork');
+  tray.setToolTip('Dbcwork');
   tray.setContextMenu(buildMenu({ status: 'idle', tasks: [] }));
+  tray.on('double-click', () => {
+    focusMainWindow();
+  });
+  tray.on('click', () => {
+    focusMainWindow();
+  });
   getDebugLogger().info({ domain: 'tray', event: 'tray.init' });
 }
 
@@ -142,20 +148,20 @@ export function updateTrayStatus(state: TrayState): void {
 
   switch (state.status) {
     case 'running':
-      tray.setToolTip(`ClawWork — ${state.tasks.length} task(s) running`);
+      tray.setToolTip(`Dbcwork — ${state.tasks.length} task(s) running`);
       startAnimation();
       break;
     case 'unread':
       tray.setTitle('●');
-      tray.setToolTip('ClawWork — new results');
+      tray.setToolTip('Dbcwork — new results');
       break;
     case 'disconnected':
       tray.setTitle('⚠');
-      tray.setToolTip('ClawWork — disconnected');
+      tray.setToolTip('Dbcwork — disconnected');
       break;
     default:
       tray.setTitle('');
-      tray.setToolTip('ClawWork');
+      tray.setToolTip('Dbcwork');
   }
 
   tray.setContextMenu(buildMenu(state));

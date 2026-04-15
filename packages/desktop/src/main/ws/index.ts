@@ -59,3 +59,8 @@ export function destroyAllGateways(): void {
   }
   gatewayClients.clear();
 }
+
+export function reloadAllGatewaysFromConfig(): void {
+  destroyAllGateways();
+  initAllGateways();
+}

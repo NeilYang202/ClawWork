@@ -19,6 +19,7 @@ export const tasks = sqliteTable('tasks', {
   tags: text('tags').notNull().default('[]'),
   artifactDir: text('artifact_dir').notNull().default(''),
   gatewayId: text('gateway_id').notNull().default(''),
+  ownerUser: text('owner_user'),
 });
 
 export const messages = sqliteTable('messages', {

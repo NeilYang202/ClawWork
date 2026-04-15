@@ -1,12 +1,12 @@
-appId: com.clawwork.app
-productName: ClawWork
+appId: com.dbcwork.app
+productName: DbcWork
 directories:
   buildResources: build
   output: dist
 publish:
   provider: github
-  owner: clawwork-ai
-  repo: clawwork
+  owner: neil
+  repo: neil
 extraResources:
   - from: build/icon.png
     to: icon.png
@@ -35,7 +35,7 @@ mac:
   entitlementsInherit: build/entitlements.mac.plist
   notarize: true
   extendInfo:
-    NSMicrophoneUsageDescription: ClawWork needs microphone access for voice dictation in chat input.
+    NSMicrophoneUsageDescription: Dbcwork needs microphone access for voice dictation in chat input.
 win:
   target:
     - target: nsis
@@ -57,6 +57,6 @@ linux:
         - x64
   category: Development
   icon: build/icon.png
-  maintainer: samzong <samzong.lu@gmail.com>
+  maintainer: neil <yp@xinyiglass.com>
   desktop:
-    StartupWMClass: ClawWork
+    StartupWMClass: Dbcwork

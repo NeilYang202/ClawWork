@@ -50,6 +50,7 @@ export interface AuthSessionConfig {
   email?: string;
   displayName?: string;
   provider?: string;
+  isAdmin?: boolean;
 }
 
 export interface ObsUploadConfig {
@@ -59,8 +60,21 @@ export interface ObsUploadConfig {
   basePath?: string;
 }
 
+export interface UserAgentBinding {
+  username: string;
+  gatewayId: string;
+  agentId: string;
+}
+
+export interface AccessControlConfig {
+  enabled?: boolean;
+  adminUsers?: string[];
+  bindings?: UserAgentBinding[];
+}
+
 export interface AppConfig {
   workspacePath: string;
+  exportPath?: string;
   theme?: 'dark' | 'light' | 'auto';
   density?: 'compact' | 'comfortable' | 'spacious';
   language?: LanguageCode;
@@ -84,6 +98,7 @@ export interface AppConfig {
   auth?: AuthProviderConfig;
   authSession?: AuthSessionConfig;
   obs?: ObsUploadConfig;
+  accessControl?: AccessControlConfig;
 }
 
 function configFilePath(): string {

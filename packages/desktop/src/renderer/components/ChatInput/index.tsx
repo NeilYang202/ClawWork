@@ -92,8 +92,16 @@ export default function ChatInput() {
   const mainView = useUiStore((s) => s.mainView);
   const settingsOpen = useUiStore((s) => s.settingsOpen);
 
-  const { pendingImages, setPendingImages, pendingFiles, setPendingFiles, handleFileSelect, removeImage, removeFile, handlePaste } =
-    useImageAttachments();
+  const {
+    pendingImages,
+    setPendingImages,
+    pendingFiles,
+    setPendingFiles,
+    handleFileSelect,
+    removeImage,
+    removeFile,
+    handlePaste,
+  } = useImageAttachments();
 
   const { contextFolders, localFilesForPicker, handleAddContextFolder, handleRemoveContextFolder, loadLocalFiles } =
     useContextFolders();
@@ -423,7 +431,14 @@ export default function ChatInput() {
     if (argPickerVisible) closeArgPicker();
     updateSlashMenu();
     updateMentionPicker();
-  }, [updateSlashMenu, argPickerVisible, closeArgPicker, updateMentionPicker, pendingImages.length, pendingFiles.length]);
+  }, [
+    updateSlashMenu,
+    argPickerVisible,
+    closeArgPicker,
+    updateMentionPicker,
+    pendingImages.length,
+    pendingFiles.length,
+  ]);
 
   const voiceActive = isVoiceListening || isVoiceTranscribing;
   const disabled = isOffline;

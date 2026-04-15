@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   updated_at TEXT NOT NULL,
   tags TEXT NOT NULL DEFAULT '[]',
   artifact_dir TEXT NOT NULL DEFAULT '',
-  gateway_id TEXT NOT NULL DEFAULT ''
+  gateway_id TEXT NOT NULL DEFAULT '',
+  owner_user TEXT
 );
 
 CREATE TABLE IF NOT EXISTS messages (
@@ -73,6 +74,7 @@ function openDatabaseAt(workspacePath: string): void {
   sqlite.exec(CREATE_TABLES_SQL);
 
   migrateAddColumn(sqlite, "ALTER TABLE tasks ADD COLUMN gateway_id TEXT NOT NULL DEFAULT ''");
+  migrateAddColumn(sqlite, 'ALTER TABLE tasks ADD COLUMN owner_user TEXT');
 
   for (const sql of [
     'ALTER TABLE tasks ADD COLUMN model TEXT',

@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:18.3
+    container_name: pg_server
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: XinYi2026
+      POSTGRES_DB: openclaw
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./data/pgdata:/var/lib/postgresql
+
+  server:
+    image: openclaw-server:v1.0.0
+    container_name: openclaw_server
+    restart: always
+    depends_on:
+      - db
+    env_file:
+      - .env
+    ports:
+      - '8787:8787'

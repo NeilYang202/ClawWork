@@ -100,6 +100,7 @@ function createWindow(): BrowserWindow {
   Menu.setApplicationMenu(buildAppMenu(devMode));
 
   const win = new BrowserWindow({
+    title: 'Dbcwork',
     width: 1280,
     height: 800,
     minWidth: 960,

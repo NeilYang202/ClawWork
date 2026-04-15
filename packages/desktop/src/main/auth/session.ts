@@ -1,7 +1,12 @@
 import { readConfig, updateConfig, writeConfig } from '../workspace/config.js';
 import type { AppConfig, AuthProviderConfig, AuthSessionConfig } from '../workspace/config.js';
+import {
+  clearRuntimeClientConfig,
+  getCachedPublicClientConfig,
+  getCachedRuntimeAccessControl,
+} from './runtime-config.js';
 
-export interface AuthSessionState {
+interface AuthSessionState {
   authenticated: boolean;
   user?: {
     userId?: string;
@@ -9,6 +14,7 @@ export interface AuthSessionState {
     email?: string;
     displayName?: string;
     provider?: string;
+    isAdmin?: boolean;
   };
   expiresAt?: string;
   authEnabled: boolean;
@@ -35,6 +41,7 @@ export function clearAuthSession(): void {
   if (!current) return;
   const next: AppConfig = { ...current, authSession: undefined };
   writeConfig(next);
+  clearRuntimeClientConfig();
 }
 
 function isTokenValid(session: AuthSessionConfig | null): boolean {
@@ -48,9 +55,9 @@ function isTokenValid(session: AuthSessionConfig | null): boolean {
 export function getAuthStatus(): AuthSessionState {
   const config = readConfig();
   const auth = getAuthConfig(config);
-  const enabled = auth.enabled === true;
+  const enabled = auth.enabled !== false;
   const serviceConfigured = Boolean(auth.serviceUrl && auth.serviceUrl.trim());
-  const ssoEnabled = Boolean(auth.ssoProvider && auth.ssoProvider.trim());
+  const ssoEnabled = getCachedPublicClientConfig().ssoEnabled;
 
   if (!enabled) {
     return {
@@ -72,6 +79,7 @@ export function getAuthStatus(): AuthSessionState {
           email: session.email,
           displayName: session.displayName,
           provider: session.provider,
+          isAdmin: session.isAdmin,
         }
       : undefined,
     expiresAt: session?.expiresAt,
@@ -92,4 +100,20 @@ export function assertAuthToken(): { ok: true; token: string } | { ok: false; er
     return { ok: false, error: 'authentication required', errorCode: 'AUTH_REQUIRED' };
   }
   return { ok: true, token };
+}
+
+export function getCurrentUserName(): string | null {
+  const session = getAuthSession();
+  const raw = session?.userName ?? session?.email;
+  if (!raw) return null;
+  return raw.trim().toLowerCase();
+}
+
+export function isCurrentUserAdmin(): boolean {
+  const session = getAuthSession();
+  if (session?.isAdmin) return true;
+  const user = getCurrentUserName();
+  if (!user) return false;
+  const admins = getCachedRuntimeAccessControl()?.adminUsers ?? [];
+  return admins.some((item) => item.trim().toLowerCase() === user);
 }

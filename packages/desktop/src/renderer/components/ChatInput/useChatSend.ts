@@ -121,7 +121,8 @@ export function useChatSend(opts: UseChatSendOpts) {
   const currentThinking = (activeTask?.thinkingLevel ?? pendingNewTask?.thinkingLevel ?? 'off') as ThinkingLevel;
 
   const currentModelEntry = currentModel ? modelCatalog.find((m) => m.id === currentModel) : undefined;
-  const modelLabel = currentModelEntry?.name ?? getModelLabel(currentModel, modelCatalog[0]?.name);
+  const modelLabel =
+    currentModelEntry?.name ?? getModelLabel(currentModel, modelCatalog[0]?.name ?? t('settings.default'));
 
   const modelsByProvider = useMemo(() => {
     const groups: Record<string, ModelCatalogEntry[]> = {};

@@ -6,6 +6,7 @@ import {
   PanelRightClose,
   Archive,
   ArchiveRestore,
+  Trash2,
   Search,
   MessageSquare,
   ArrowUp,
@@ -232,7 +233,7 @@ function ChatHeader({
             )}
           </>
         ) : (
-          <h2 className="type-label text-[var(--text-muted)]">ClawWork</h2>
+          <h2 className="type-label text-[var(--text-muted)]">Dbcwork</h2>
         )}
       </div>
       <div className="titlebar-no-drag flex items-center gap-1">
@@ -671,6 +672,8 @@ function ArchivedTasks() {
   const tasks = useTaskStore((s) => s.tasks);
   const setActiveTask = useTaskStore((s) => s.setActiveTask);
   const updateTaskStatus = useTaskStore((s) => s.updateTaskStatus);
+  const removeTask = useTaskStore((s) => s.removeTask);
+  const clearMessages = useMessageStore((s) => s.clearMessages);
   const setMainView = useUiStore((s) => s.setMainView);
   const gwInfoMap = useUiStore((s) => s.gatewayInfoMap);
   const [searchQuery, setSearchQuery] = useState('');
@@ -695,6 +698,15 @@ function ArchivedTasks() {
   const handleOpenTask = (taskId: string): void => {
     setActiveTask(taskId);
     setMainView('chat');
+  };
+
+  const handleDeleteTask = (taskId: string): void => {
+    const task = tasks.find((item) => item.id === taskId);
+    if (task) {
+      window.clawwork.deleteSession(task.gatewayId, task.sessionKey).catch(() => {});
+    }
+    clearMessages(taskId);
+    removeTask(taskId);
   };
   const rows: ArchivedTaskRow[] = archivedTasks.map((task) => ({
     id: task.id,
@@ -735,21 +747,38 @@ function ArchivedTasks() {
       kind: 'action',
       width: '8%',
       render: (row) => (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleReactivate(row.id);
-              }}
-            >
-              <ArchiveRestore size={14} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{t('contextMenu.reactivate')}</TooltipContent>
-        </Tooltip>
+        <div className="flex items-center justify-end gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleReactivate(row.id);
+                }}
+              >
+                <ArchiveRestore size={14} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t('contextMenu.reactivate')}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleDeleteTask(row.id);
+                }}
+              >
+                <Trash2 size={14} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t('contextMenu.deleteTask')}</TooltipContent>
+          </Tooltip>
+        </div>
       ),
     },
   ];

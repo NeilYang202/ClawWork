@@ -4,9 +4,21 @@ import { getDb, isDbReady } from '../db/index.js';
 import { tasks, messages, artifacts, taskRooms, taskRoomSessions, teams, teamAgents } from '../db/schema.js';
 import { autoExtractArtifacts } from '../artifact/auto-extract.js';
 import { getWorkspacePath } from '../workspace/config.js';
+import { getAuthStatus, getCurrentUserName } from '../auth/session.js';
 
 function ipcError(err: unknown): { ok: false; error: string } {
   return { ok: false, error: err instanceof Error ? err.message : 'unknown' };
+}
+
+function resolveOwnedUser(): string | null {
+  try {
+    const auth = getAuthStatus();
+    if (!auth.authEnabled) return null;
+    if (!auth.authenticated) return null;
+    return getCurrentUserName();
+  } catch {
+    return null;
+  }
 }
 
 export function registerDataHandlers(): void {
@@ -38,6 +50,7 @@ export function registerDataHandlers(): void {
       if (!isDbReady()) return ipcError(new Error('database not ready'));
       try {
         const db = getDb();
+        const ownerUser = resolveOwnedUser();
         db.insert(tasks)
           .values({
             id: task.id,
@@ -58,6 +71,7 @@ export function registerDataHandlers(): void {
             tags: JSON.stringify(task.tags),
             artifactDir: task.artifactDir,
             gatewayId: task.gatewayId,
+            ownerUser,
           })
           .run();
         return { ok: true };
@@ -90,6 +104,11 @@ export function registerDataHandlers(): void {
       if (!isDbReady()) return ipcError(new Error('database not ready'));
       try {
         const db = getDb();
+        const ownerUser = resolveOwnedUser();
+        if (ownerUser !== null) {
+          const taskRow = db.select({ ownerUser: tasks.ownerUser }).from(tasks).where(eq(tasks.id, params.id)).get();
+          if (!taskRow || taskRow.ownerUser !== ownerUser) return { ok: false, error: 'forbidden' };
+        }
         const updates: Record<string, string | number | boolean | null | undefined> = { updatedAt: params.updatedAt };
         if (params.title !== undefined) updates.title = params.title;
         if (params.status !== undefined) updates.status = params.status;
@@ -130,6 +149,11 @@ export function registerDataHandlers(): void {
       if (!isDbReady()) return ipcError(new Error('database not ready'));
       try {
         const db = getDb();
+        const ownerUser = resolveOwnedUser();
+        if (ownerUser !== null) {
+          const taskRow = db.select({ ownerUser: tasks.ownerUser }).from(tasks).where(eq(tasks.id, msg.taskId)).get();
+          if (!taskRow || taskRow.ownerUser !== ownerUser) return { ok: false, error: 'forbidden' };
+        }
         let resolvedSessionKey = msg.sessionKey;
         if (!resolvedSessionKey) {
           const task = db.select({ sk: tasks.sessionKey }).from(tasks).where(eq(tasks.id, msg.taskId)).get();
@@ -159,12 +183,21 @@ export function registerDataHandlers(): void {
             },
           })
           .run();
-        if (msg.role === 'assistant' && msg.content.length > 0) {
+        const existedArtifact = db
+          .select({ id: artifacts.id })
+          .from(artifacts)
+          .where(eq(artifacts.messageId, msg.id))
+          .get();
+        if (msg.role === 'assistant' && (msg.content.length > 0 || (msg.toolCalls?.length ?? 0) > 0)) {
           const workspacePath = getWorkspacePath();
-          if (workspacePath) {
-            autoExtractArtifacts({ workspacePath, taskId: msg.taskId, messageId: msg.id, content: msg.content }).catch(
-              (err: unknown) => console.error('[auto-extract]', err),
-            );
+          if (workspacePath && !existedArtifact) {
+            autoExtractArtifacts({
+              workspacePath,
+              taskId: msg.taskId,
+              messageId: msg.id,
+              content: msg.content,
+              toolCalls: msg.toolCalls,
+            }).catch((err: unknown) => console.error('[auto-extract]', err));
           }
         }
         return { ok: true };
@@ -179,6 +212,11 @@ export function registerDataHandlers(): void {
     if (!isDbReady()) return ipcError(new Error('database not ready'));
     try {
       const db = getDb();
+      const ownerUser = resolveOwnedUser();
+      if (ownerUser !== null) {
+        const taskRow = db.select({ ownerUser: tasks.ownerUser }).from(tasks).where(eq(tasks.id, params.id)).get();
+        if (!taskRow || taskRow.ownerUser !== ownerUser) return { ok: false, error: 'forbidden' };
+      }
       db.delete(taskRoomSessions).where(eq(taskRoomSessions.taskId, params.id)).run();
       db.delete(taskRooms).where(eq(taskRooms.taskId, params.id)).run();
       db.delete(artifacts).where(eq(artifacts.taskId, params.id)).run();
@@ -195,7 +233,12 @@ export function registerDataHandlers(): void {
     if (!isDbReady()) return { ok: true, rows: [] };
     try {
       const db = getDb();
-      const rows = db.select().from(tasks).orderBy(desc(tasks.createdAt)).all();
+      const ownerUser = resolveOwnedUser();
+      const query = db.select().from(tasks);
+      const rows =
+        ownerUser !== null
+          ? query.where(eq(tasks.ownerUser, ownerUser)).orderBy(desc(tasks.createdAt)).all()
+          : query.orderBy(desc(tasks.createdAt)).all();
       return {
         ok: true,
         rows: rows.map((r) => {
@@ -216,6 +259,13 @@ export function registerDataHandlers(): void {
     if (!isDbReady()) return { ok: true, rows: [] };
     try {
       const db = getDb();
+      const ownerUser = resolveOwnedUser();
+      if (ownerUser !== null) {
+        const taskRow = db.select({ ownerUser: tasks.ownerUser }).from(tasks).where(eq(tasks.id, params.taskId)).get();
+        if (!taskRow || taskRow.ownerUser !== ownerUser) {
+          return { ok: true, rows: [] };
+        }
+      }
       const rows = db
         .select()
         .from(messages)
@@ -259,6 +309,15 @@ export function registerDataHandlers(): void {
       if (!isDbReady()) return ipcError(new Error('database not ready'));
       try {
         const db = getDb();
+        const ownerUser = resolveOwnedUser();
+        if (ownerUser !== null) {
+          const taskRow = db
+            .select({ ownerUser: tasks.ownerUser })
+            .from(tasks)
+            .where(eq(tasks.id, params.taskId))
+            .get();
+          if (!taskRow || taskRow.ownerUser !== ownerUser) return { ok: false, error: 'forbidden' };
+        }
         db.insert(taskRooms)
           .values({
             taskId: params.taskId,
@@ -285,6 +344,13 @@ export function registerDataHandlers(): void {
     if (!isDbReady()) return { ok: true, room: null, performers: [] };
     try {
       const db = getDb();
+      const ownerUser = resolveOwnedUser();
+      if (ownerUser !== null) {
+        const taskRow = db.select({ ownerUser: tasks.ownerUser }).from(tasks).where(eq(tasks.id, params.taskId)).get();
+        if (!taskRow || taskRow.ownerUser !== ownerUser) {
+          return { ok: true, room: null, performers: [] };
+        }
+      }
       const room = db.select().from(taskRooms).where(eq(taskRooms.taskId, params.taskId)).get();
       const performers = db.select().from(taskRoomSessions).where(eq(taskRoomSessions.taskId, params.taskId)).all();
       return { ok: true, room: room ?? null, performers };
@@ -310,6 +376,15 @@ export function registerDataHandlers(): void {
       if (!isDbReady()) return ipcError(new Error('database not ready'));
       try {
         const db = getDb();
+        const ownerUser = resolveOwnedUser();
+        if (ownerUser !== null) {
+          const taskRow = db
+            .select({ ownerUser: tasks.ownerUser })
+            .from(tasks)
+            .where(eq(tasks.id, params.taskId))
+            .get();
+          if (!taskRow || taskRow.ownerUser !== ownerUser) return { ok: false, error: 'forbidden' };
+        }
         db.insert(taskRoomSessions)
           .values({
             sessionKey: params.sessionKey,
@@ -341,6 +416,11 @@ export function registerDataHandlers(): void {
     if (!isDbReady()) return ipcError(new Error('database not ready'));
     try {
       const db = getDb();
+      const ownerUser = resolveOwnedUser();
+      if (ownerUser !== null) {
+        const taskRow = db.select({ ownerUser: tasks.ownerUser }).from(tasks).where(eq(tasks.id, params.taskId)).get();
+        if (!taskRow || taskRow.ownerUser !== ownerUser) return { ok: false, error: 'forbidden' };
+      }
       db.delete(taskRoomSessions).where(eq(taskRoomSessions.taskId, params.taskId)).run();
       db.delete(taskRooms).where(eq(taskRooms.taskId, params.taskId)).run();
       return { ok: true };

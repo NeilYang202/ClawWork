@@ -1,10 +1,14 @@
-import { copyFileSync, statSync, writeFileSync } from 'fs';
-import { basename, extname, resolve, sep } from 'path';
+import { copyFileSync, mkdirSync, statSync, writeFileSync, readFileSync } from 'fs';
+import { basename, extname, join, resolve, sep } from 'path';
 import { randomUUID } from 'crypto';
 import type { Artifact } from '@clawwork/shared';
 import { getDb } from '../db/index.js';
-import { artifacts } from '../db/schema.js';
+import { artifacts, tasks } from '../db/schema.js';
 import { ensureTaskDir } from '../workspace/init.js';
+import { readConfig } from '../workspace/config.js';
+import { getAuthSession } from '../auth/session.js';
+import { uploadGeneratedFileToObs } from '../obs/upload.js';
+import { eq } from 'drizzle-orm';
 
 const MIME_MAP: Record<string, string> = {
   '.png': 'image/png',
@@ -56,6 +60,17 @@ function uniqueFileName(_dir: string, name: string): string {
   return `${base}-${randomUUID().slice(0, 8)}${ext}`;
 }
 
+function mirrorToExportPath(taskId: string, finalName: string, sourcePath: string): void {
+  const exportPath = readConfig()?.exportPath?.trim();
+  if (!exportPath) return;
+  const base = resolve(exportPath);
+  const taskExportDir = resolve(base, taskId);
+  if (!taskExportDir.startsWith(base + sep) && taskExportDir !== base) return;
+  mkdirSync(taskExportDir, { recursive: true });
+  const target = join(taskExportDir, finalName);
+  copyFileSync(sourcePath, target);
+}
+
 interface SaveArtifactParams {
   workspacePath: string;
   taskId: string;
@@ -63,6 +78,34 @@ interface SaveArtifactParams {
   sourcePath: string;
   fileName?: string;
   mediaType?: string;
+}
+
+async function uploadArtifactToObs(taskId: string, fileName: string, mimeType: string, content: Buffer): Promise<void> {
+  const config = readConfig();
+  const serviceUrl = config?.auth?.serviceUrl;
+  const token = getAuthSession()?.token;
+  if (!serviceUrl?.trim() || !token) return;
+  const db = getDb();
+  const task = db
+    .select({ gatewayId: tasks.gatewayId, sessionKey: tasks.sessionKey })
+    .from(tasks)
+    .where(eq(tasks.id, taskId))
+    .get();
+  if (!task?.gatewayId || !task.sessionKey) return;
+  try {
+    await uploadGeneratedFileToObs({
+      serviceUrl,
+      gatewayId: task.gatewayId,
+      sessionKey: task.sessionKey,
+      taskId,
+      fileName,
+      mimeType,
+      contentBase64: content.toString('base64'),
+      token,
+    });
+  } catch {
+    return;
+  }
 }
 
 export async function saveArtifact(params: SaveArtifactParams): Promise<Artifact> {
@@ -73,10 +116,13 @@ export async function saveArtifact(params: SaveArtifactParams): Promise<Artifact
   const { finalName, destPath } = resolveArtifactDestination(taskDir, originalName);
 
   copyFileSync(sourcePath, destPath);
+  mirrorToExportPath(taskId, finalName, destPath);
 
   const stat = statSync(destPath);
   const localPath = `${taskId}/${finalName}`;
   const mimeType = mediaType ?? detectMimeType(finalName);
+  const buffer = readFileSync(destPath);
+  await uploadArtifactToObs(taskId, finalName, mimeType, buffer);
   const now = new Date().toISOString();
   const id = randomUUID();
 
@@ -129,9 +175,11 @@ export async function saveArtifactFromBuffer(params: SaveArtifactFromBufferParam
   const { finalName, destPath } = resolveArtifactDestination(taskDir, fileName);
 
   writeFileSync(destPath, buffer);
+  mirrorToExportPath(taskId, finalName, destPath);
 
   const localPath = `${taskId}/${finalName}`;
   const mimeType = detectMimeType(finalName);
+  await uploadArtifactToObs(taskId, finalName, mimeType, buffer);
   const now = new Date().toISOString();
   const id = randomUUID();
 

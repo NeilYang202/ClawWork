@@ -6,6 +6,8 @@ interface AuthUser {
   username?: string;
   email?: string;
   displayName?: string;
+  isAdmin?: boolean;
+  roles?: string[];
 }
 
 interface LoginResult {
@@ -31,6 +33,58 @@ interface SsoPollResult {
   expiresAt?: string;
   provider?: string;
   user?: AuthUser;
+}
+
+interface PublicClientConfig {
+  ssoEnabled: boolean;
+  ssoProvider?: string;
+}
+
+interface AdminClientConfig {
+  obs: {
+    enabled: boolean;
+    endpoint?: string;
+    bucket?: string;
+    basePath?: string;
+    accessKey?: string;
+    secretKey?: string;
+    region?: string;
+  };
+  sso: {
+    enabled: boolean;
+    provider?: string;
+    adDomain?: string;
+  };
+  accessControl: {
+    enabled: boolean;
+    adminUsers: string[];
+    bindings: Array<{ username: string; gatewayId: string; agentId: string }>;
+  };
+  gateways: Array<{
+    id: string;
+    name: string;
+    url: string;
+    token?: string;
+    password?: string;
+    pairingCode?: string;
+    authMode?: 'token' | 'password' | 'pairingCode';
+    isDefault?: boolean;
+    color?: string;
+  }>;
+}
+
+interface RuntimeClientConfig {
+  accessControl: AdminClientConfig['accessControl'];
+  gateways: AdminClientConfig['gateways'];
+}
+
+interface AdminUser {
+  id: string;
+  username: string;
+  email?: string;
+  displayName?: string;
+  isAdmin: boolean;
+  isActive: boolean;
 }
 
 function normalizeBaseUrl(serviceUrl: string): string {
@@ -62,6 +116,55 @@ async function postJson<T>(url: string, body: Record<string, unknown>, token?: s
   return payload as T;
 }
 
+async function getJson<T>(url: string, token?: string): Promise<T> {
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!response.ok) {
+    const err = (payload.error as string) || `request failed: ${response.status}`;
+    throw new Error(err);
+  }
+  return payload as T;
+}
+
+async function putJson<T>(url: string, body: Record<string, unknown>, token: string): Promise<T> {
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!response.ok) {
+    const err = (payload.error as string) || `request failed: ${response.status}`;
+    throw new Error(err);
+  }
+  return payload as T;
+}
+
+async function patchJson<T>(url: string, body: Record<string, unknown>, token: string): Promise<T> {
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!response.ok) {
+    const err = (payload.error as string) || `request failed: ${response.status}`;
+    throw new Error(err);
+  }
+  return payload as T;
+}
+
 export async function loginWithPassword(
   auth: AuthProviderConfig,
   params: { username: string; password: string },
@@ -87,6 +190,7 @@ export async function loginWithPassword(
     email: result.user?.email,
     displayName: result.user?.displayName,
     provider: result.provider ?? 'password',
+    isAdmin: result.user?.isAdmin === true || (result.user?.roles ?? []).includes('admin'),
   };
 }
 
@@ -125,6 +229,59 @@ export async function pollSso(
       email: result.user?.email,
       displayName: result.user?.displayName,
       provider: result.provider ?? auth.ssoProvider ?? 'sso',
+      isAdmin: result.user?.isAdmin === true || (result.user?.roles ?? []).includes('admin'),
     },
   };
+}
+
+export async function getPublicClientConfig(auth: AuthProviderConfig): Promise<PublicClientConfig> {
+  const baseUrl = ensureServiceUrl(auth);
+  return getJson<PublicClientConfig>(`${baseUrl}/api/client/public-config`);
+}
+
+export async function getRuntimeClientConfig(auth: AuthProviderConfig, token: string): Promise<RuntimeClientConfig> {
+  const baseUrl = ensureServiceUrl(auth);
+  return getJson<RuntimeClientConfig>(`${baseUrl}/api/client/runtime-config`, token);
+}
+
+export async function getAdminClientConfig(auth: AuthProviderConfig, token: string): Promise<AdminClientConfig> {
+  const baseUrl = ensureServiceUrl(auth);
+  return getJson<AdminClientConfig>(`${baseUrl}/api/admin/config`, token);
+}
+
+export async function updateAdminClientConfig(
+  auth: AuthProviderConfig,
+  token: string,
+  payload: AdminClientConfig,
+): Promise<AdminClientConfig> {
+  const baseUrl = ensureServiceUrl(auth);
+  return putJson<AdminClientConfig>(
+    `${baseUrl}/api/admin/config`,
+    payload as unknown as Record<string, unknown>,
+    token,
+  );
+}
+
+export async function getAdminUsers(auth: AuthProviderConfig, token: string): Promise<AdminUser[]> {
+  const baseUrl = ensureServiceUrl(auth);
+  return getJson<AdminUser[]>(`${baseUrl}/api/admin/users`, token);
+}
+
+export async function createAdminUser(
+  auth: AuthProviderConfig,
+  token: string,
+  payload: { username: string; password: string; email?: string; displayName?: string; isAdmin?: boolean },
+): Promise<AdminUser> {
+  const baseUrl = ensureServiceUrl(auth);
+  return postJson<AdminUser>(`${baseUrl}/api/admin/users`, payload as Record<string, unknown>, token);
+}
+
+export async function updateAdminUser(
+  auth: AuthProviderConfig,
+  token: string,
+  userId: string,
+  payload: { password?: string; email?: string; displayName?: string; isAdmin?: boolean; isActive?: boolean },
+): Promise<AdminUser> {
+  const baseUrl = ensureServiceUrl(auth);
+  return patchJson<AdminUser>(`${baseUrl}/api/admin/users/${encodeURIComponent(userId)}`, payload, token);
 }

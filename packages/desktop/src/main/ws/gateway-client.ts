@@ -295,7 +295,7 @@ export class GatewayClient {
       maxProtocol: 3,
       client: {
         id: 'gateway-client',
-        displayName: 'ClawWork Desktop',
+        displayName: 'Dbcwork Desktop',
         version: app.getVersion(),
         platform: process.platform,
         mode: 'backend',

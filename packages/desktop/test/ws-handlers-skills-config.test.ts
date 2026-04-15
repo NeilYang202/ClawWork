@@ -47,6 +47,13 @@ vi.mock('../src/main/debug/index.js', () => ({
   getDebugLogger: vi.fn(() => ({ emit: vi.fn() })),
 }));
 
+vi.mock('../src/main/auth/session.js', () => ({
+  assertAuthToken: vi.fn(() => ({ ok: true, token: 'test-token' })),
+  getAuthStatus: vi.fn(() => ({ authenticated: true, authEnabled: true, ssoEnabled: false, serviceConfigured: true })),
+  getCurrentUserName: vi.fn(() => 'tester'),
+  isCurrentUserAdmin: vi.fn(() => true),
+}));
+
 vi.mock('@clawwork/shared', () => ({
   isClawWorkSession: vi.fn(() => true),
   parseTaskIdFromSessionKey: vi.fn(() => 'task-1'),

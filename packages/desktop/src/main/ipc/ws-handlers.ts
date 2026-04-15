@@ -15,7 +15,8 @@ import type {
 } from '@clawwork/shared';
 import { getDebugLogger } from '../debug/index.js';
 import type { GatewayClient } from '../ws/gateway-client.js';
-import { assertAuthToken, getAuthStatus } from '../auth/session.js';
+import { assertAuthToken, getAuthStatus, getCurrentUserName, isCurrentUserAdmin } from '../auth/session.js';
+import { getCachedRuntimeAccessControl } from '../auth/runtime-config.js';
 import { buildUploadInjection, uploadAttachmentsToObs } from '../obs/upload.js';
 import type { UploadedFileRef } from '../obs/upload.js';
 
@@ -94,6 +95,60 @@ interface ChatHistoryPayload {
 const INTERNAL_ASSISTANT_MARKERS = new Set(['NO_REPLY']);
 const uploadedRefsBySession = new Map<string, UploadedFileRef[]>();
 
+interface AgentCatalogPayload {
+  defaultId?: string;
+  agents?: Array<{ id: string; [k: string]: unknown }>;
+  [k: string]: unknown;
+}
+
+function resolveAllowedAgents(gatewayId: string): Set<string> | null {
+  const auth = getAuthStatus();
+  if (!auth.authEnabled) return null;
+  if (isCurrentUserAdmin()) return null;
+  const ac = getCachedRuntimeAccessControl();
+  if (!ac || ac.enabled === false) return new Set();
+  const user = getCurrentUserName();
+  if (!user) return new Set();
+  const bindings = ac.bindings ?? [];
+  const matched = bindings
+    .filter((b) => b.gatewayId === gatewayId && b.username.trim().toLowerCase() === user)
+    .map((b) => b.agentId);
+  return new Set(matched);
+}
+
+function assertAgentAllowed(
+  gatewayId: string,
+  agentId: string,
+): { ok: true } | { ok: false; error: string; errorCode: string } {
+  const allowed = resolveAllowedAgents(gatewayId);
+  if (allowed === null) return { ok: true };
+  if (allowed.has(agentId)) return { ok: true };
+  return { ok: false, error: 'agent is not allowed for current user', errorCode: 'AGENT_FORBIDDEN' };
+}
+
+function assertInfraManageAllowed(): { ok: true } | { ok: false; error: string; errorCode: string } {
+  const auth = getAuthStatus();
+  if (!auth.authEnabled) return { ok: true };
+  if (isCurrentUserAdmin()) return { ok: true };
+  return { ok: false, error: 'admin required', errorCode: 'ADMIN_REQUIRED' };
+}
+
+function filterAgentCatalog(gatewayId: string, payload: Record<string, unknown>): Record<string, unknown> {
+  const allowed = resolveAllowedAgents(gatewayId);
+  if (allowed === null) return payload;
+  const data = payload as AgentCatalogPayload;
+  const original = data.agents ?? [];
+  const agents = original.filter((agent) => allowed.has(agent.id));
+  const defaultId = agents.some((a) => a.id === data.defaultId) ? data.defaultId : (agents[0]?.id ?? '');
+  return { ...payload, agents, defaultId };
+}
+
+function filterSessionsByAgent(gatewayId: string, sessions: GatewaySessionRow[]): GatewaySessionRow[] {
+  const allowed = resolveAllowedAgents(gatewayId);
+  if (allowed === null) return sessions;
+  return sessions.filter((session) => allowed.has(parseAgentIdFromSessionKey(session.key)));
+}
+
 /** Parsed tool call for transport to renderer */
 interface ParsedToolCall {
   id: string;
@@ -121,6 +176,8 @@ export function registerWsHandlers(): void {
       if (!authGuard.ok) {
         return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
       }
+      const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
+      if (!agentGuard.ok) return agentGuard;
       const taskId = parseTaskIdFromSessionKey(payload.sessionKey) ?? undefined;
       getDebugLogger().info({
         domain: 'ipc',
@@ -147,7 +204,7 @@ export function registerWsHandlers(): void {
         const attachments = payload.attachments ?? [];
         const config = readConfig();
         const uploaded = await uploadAttachmentsToObs({
-          obs: config?.obs,
+          serviceUrl: config?.auth?.serviceUrl,
           gatewayId: payload.gatewayId,
           sessionKey: payload.sessionKey,
           attachments,
@@ -199,6 +256,8 @@ export function registerWsHandlers(): void {
     ) => {
       const authGuard = assertAuthToken();
       if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
+      const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
+      if (!agentGuard.ok) return agentGuard;
       const gw = getGatewayClient(payload.gatewayId);
       if (!gw?.isConnected) {
         return { ok: false, error: 'gateway not connected' };
@@ -228,8 +287,9 @@ export function registerWsHandlers(): void {
         return { ok: false, error: 'gateway not connected' };
       }
       try {
-        const result = await gw.listSessions();
-        return { ok: true, result };
+        const raw = (await gw.listSessions()) as SessionsListPayload;
+        const sessions = filterSessionsByAgent(payload.gatewayId, raw.sessions ?? []);
+        return { ok: true, result: { ...raw, sessions } };
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'unknown error';
         return { ok: false, error: msg };
@@ -243,8 +303,9 @@ export function registerWsHandlers(): void {
     const gw = getGatewayClient(payload.gatewayId);
     if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
     try {
-      const result = await gw.listSessionsBySpawner(payload.spawnedBy);
-      return { ok: true, result };
+      const raw = (await gw.listSessionsBySpawner(payload.spawnedBy)) as SessionsListPayload;
+      const sessions = filterSessionsByAgent(payload.gatewayId, raw.sessions ?? []);
+      return { ok: true, result: { ...raw, sessions } };
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : 'unknown error' };
     }
@@ -255,6 +316,8 @@ export function registerWsHandlers(): void {
     async (_event, payload: { gatewayId: string; key: string; agentId: string; message?: string }) => {
       const authGuard = assertAuthToken();
       if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
+      const agentGuard = assertAgentAllowed(payload.gatewayId, payload.agentId);
+      if (!agentGuard.ok) return agentGuard;
       const gw = getGatewayClient(payload.gatewayId);
       if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
       try {
@@ -316,11 +379,13 @@ export function registerWsHandlers(): void {
       if (!gw.isConnected) continue;
       try {
         const deviceId = ensureDeviceId();
+        const allowedAgents = resolveAllowedAgents(gatewayId);
         const raw = (await gw.listSessions()) as unknown as SessionsListPayload;
         const allSessions = raw.sessions ?? [];
         const ours = allSessions.filter((s) => isClawWorkSession(s.key, deviceId));
 
         for (const s of ours) {
+          if (allowedAgents && !allowedAgents.has(parseAgentIdFromSessionKey(s.key))) continue;
           const taskId = parseTaskIdFromSessionKey(s.key);
           if (!taskId) continue;
 
@@ -437,20 +502,29 @@ export function registerWsHandlers(): void {
   });
 
   ipcMain.handle('ws:agents-list', async (_event, payload: { gatewayId: string }) =>
-    gatewayRpc(payload.gatewayId, (gw) => gw.listAgents()),
+    gatewayRpc(payload.gatewayId, async (gw) => {
+      const raw = await gw.listAgents();
+      return filterAgentCatalog(payload.gatewayId, raw);
+    }),
   );
 
   ipcMain.handle(
     'ws:agents-create',
-    async (_event, payload: { gatewayId: string; name: string; workspace: string; emoji?: string; avatar?: string }) =>
-      gatewayRpc(payload.gatewayId, (gw) =>
+    async (
+      _event,
+      payload: { gatewayId: string; name: string; workspace: string; emoji?: string; avatar?: string },
+    ) => {
+      const guard = assertInfraManageAllowed();
+      if (!guard.ok) return guard;
+      return gatewayRpc(payload.gatewayId, (gw) =>
         gw.createAgent({
           name: payload.name,
           workspace: payload.workspace,
           emoji: payload.emoji,
           avatar: payload.avatar,
         }),
-      ),
+      );
+    },
   );
 
   ipcMain.handle(
@@ -465,8 +539,10 @@ export function registerWsHandlers(): void {
         model?: string;
         avatar?: string;
       },
-    ) =>
-      gatewayRpc(payload.gatewayId, (gw) =>
+    ) => {
+      const guard = assertInfraManageAllowed();
+      if (!guard.ok) return guard;
+      return gatewayRpc(payload.gatewayId, (gw) =>
         gw.updateAgent({
           agentId: payload.agentId,
           name: payload.name,
@@ -474,15 +550,19 @@ export function registerWsHandlers(): void {
           model: payload.model,
           avatar: payload.avatar,
         }),
-      ),
+      );
+    },
   );
 
   ipcMain.handle(
     'ws:agents-delete',
-    async (_event, payload: { gatewayId: string; agentId: string; deleteFiles?: boolean }) =>
-      gatewayRpc(payload.gatewayId, (gw) =>
+    async (_event, payload: { gatewayId: string; agentId: string; deleteFiles?: boolean }) => {
+      const guard = assertInfraManageAllowed();
+      if (!guard.ok) return guard;
+      return gatewayRpc(payload.gatewayId, (gw) =>
         gw.deleteAgent({ agentId: payload.agentId, deleteFiles: payload.deleteFiles }),
-      ),
+      );
+    },
   );
 
   ipcMain.handle('ws:agents-files-list', async (_event, payload: { gatewayId: string; agentId: string }) =>
@@ -495,8 +575,11 @@ export function registerWsHandlers(): void {
 
   ipcMain.handle(
     'ws:agents-files-set',
-    async (_event, payload: { gatewayId: string; agentId: string; name: string; content: string }) =>
-      gatewayRpc(payload.gatewayId, (gw) => gw.setAgentFile(payload.agentId, payload.name, payload.content)),
+    async (_event, payload: { gatewayId: string; agentId: string; name: string; content: string }) => {
+      const guard = assertInfraManageAllowed();
+      if (!guard.ok) return guard;
+      return gatewayRpc(payload.gatewayId, (gw) => gw.setAgentFile(payload.agentId, payload.name, payload.content));
+    },
   );
 
   ipcMain.handle(
@@ -509,6 +592,10 @@ export function registerWsHandlers(): void {
         patch: Record<string, unknown>;
       },
     ) => {
+      const authGuard = assertAuthToken();
+      if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
+      const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
+      if (!agentGuard.ok) return agentGuard;
       const gw = getGatewayClient(payload.gatewayId);
       if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
       try {
@@ -535,6 +622,8 @@ export function registerWsHandlers(): void {
   ipcMain.handle('ws:abort-chat', async (_event, payload: { gatewayId: string; sessionKey: string }) => {
     const authGuard = assertAuthToken();
     if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
+    const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
+    if (!agentGuard.ok) return agentGuard;
     const gw = getGatewayClient(payload.gatewayId);
     if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
     try {
@@ -596,11 +685,15 @@ export function registerWsHandlers(): void {
   );
 
   ipcMain.handle('ws:config-set', async (_event, payload: { gatewayId: string } & ConfigSetParams) => {
+    const guard = assertInfraManageAllowed();
+    if (!guard.ok) return guard;
     const { gatewayId, ...params } = payload;
     return gatewayRpc(gatewayId, (gw) => gw.setConfig(params));
   });
 
   ipcMain.handle('ws:config-patch', async (_event, payload: { gatewayId: string } & ConfigPatchParams) => {
+    const guard = assertInfraManageAllowed();
+    if (!guard.ok) return guard;
     const { gatewayId, ...params } = payload;
     return gatewayRpc(gatewayId, (gw) => gw.patchConfig(params));
   });
@@ -637,9 +730,11 @@ export function registerWsHandlers(): void {
       ),
   );
 
-  ipcMain.handle('ws:session-usage', async (_event, payload: { gatewayId: string; sessionKey: string }) =>
-    gatewayRpc(payload.gatewayId, (gw) => gw.getSessionUsage({ key: payload.sessionKey })),
-  );
+  ipcMain.handle('ws:session-usage', async (_event, payload: { gatewayId: string; sessionKey: string }) => {
+    const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
+    if (!agentGuard.ok) return agentGuard;
+    return gatewayRpc(payload.gatewayId, (gw) => gw.getSessionUsage({ key: payload.sessionKey }));
+  });
 
   ipcMain.handle(
     'ws:exec-approval-resolve',
@@ -674,6 +769,10 @@ export function registerWsHandlers(): void {
         reason?: 'new' | 'reset';
       },
     ) => {
+      const authGuard = assertAuthToken();
+      if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
+      const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
+      if (!agentGuard.ok) return agentGuard;
       const gw = getGatewayClient(payload.gatewayId);
       if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
       try {
@@ -696,6 +795,10 @@ export function registerWsHandlers(): void {
         sessionKey: string;
       },
     ) => {
+      const authGuard = assertAuthToken();
+      if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
+      const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
+      if (!agentGuard.ok) return agentGuard;
       const gw = getGatewayClient(payload.gatewayId);
       if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
       try {
@@ -719,6 +822,10 @@ export function registerWsHandlers(): void {
         maxLines?: number;
       },
     ) => {
+      const authGuard = assertAuthToken();
+      if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
+      const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
+      if (!agentGuard.ok) return agentGuard;
       const gw = getGatewayClient(payload.gatewayId);
       if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
       try {
