@@ -309,9 +309,7 @@ export default function App() {
       <TooltipProvider>
         <Login
           onAuthenticated={() => {
-            void refreshGatewayList();
-            setNeedsLogin(false);
-            setReady(true);
+            window.location.reload();
           }}
         />
         <Toaster

@@ -165,6 +165,20 @@ async function patchJson<T>(url: string, body: Record<string, unknown>, token: s
   return payload as T;
 }
 
+async function deleteJson(url: string, token: string): Promise<void> {
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      authorization: `Bearer ${token}`,
+    },
+  });
+  const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!response.ok) {
+    const err = (payload.error as string) || `request failed: ${response.status}`;
+    throw new Error(err);
+  }
+}
+
 export async function loginWithPassword(
   auth: AuthProviderConfig,
   params: { username: string; password: string },
@@ -284,4 +298,9 @@ export async function updateAdminUser(
 ): Promise<AdminUser> {
   const baseUrl = ensureServiceUrl(auth);
   return patchJson<AdminUser>(`${baseUrl}/api/admin/users/${encodeURIComponent(userId)}`, payload, token);
+}
+
+export async function deleteAdminUser(auth: AuthProviderConfig, token: string, userId: string): Promise<void> {
+  const baseUrl = ensureServiceUrl(auth);
+  await deleteJson(`${baseUrl}/api/admin/users/${encodeURIComponent(userId)}`, token);
 }

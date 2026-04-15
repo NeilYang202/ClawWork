@@ -82,3 +82,13 @@ async def update_user(db: AsyncSession, user_id: str, payload: AdminUpdateUserIn
     await db.commit()
     await db.refresh(row)
     return _to_admin_user_out(row)
+
+
+async def delete_user(db: AsyncSession, user_id: str, operator_id: str) -> None:
+    row = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='user not found')
+    if row.id == operator_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='cannot delete current user')
+    await db.delete(row)
+    await db.commit()

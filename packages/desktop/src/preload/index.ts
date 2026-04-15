@@ -54,6 +54,7 @@ function buildApi(): ClawWorkAPI {
       isAdmin?: boolean;
       isActive?: boolean;
     }) => ipcRenderer.invoke('auth:admin-users-update', payload),
+    deleteAdminUser: (userId: string) => ipcRenderer.invoke('auth:admin-users-delete', { userId }),
     listGateways: () => ipcRenderer.invoke('ws:list-gateways'),
     listModels: (gatewayId: string) => ipcRenderer.invoke('ws:models-list', { gatewayId }),
     listAgents: (gatewayId: string) => ipcRenderer.invoke('ws:agents-list', { gatewayId }),

@@ -7,7 +7,7 @@ from app.db.session import get_db
 from app.schemas.auth import AdminCreateUserIn, AdminUpdateUserIn, AdminUserOut
 from app.schemas.config import AdminConfig
 from app.services.config_service import get_admin_config, update_admin_config
-from app.services.user_service import list_users, create_user, update_user
+from app.services.user_service import list_users, create_user, update_user, delete_user
 
 router = APIRouter(prefix='/api/admin', tags=['admin'])
 
@@ -54,3 +54,13 @@ async def admin_update_user(
     db: AsyncSession = Depends(get_db),
 ) -> AdminUserOut:
     return await update_user(db, user_id, payload)
+
+
+@router.delete('/users/{user_id}')
+async def admin_delete_user(
+    user_id: str,
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, bool]:
+    await delete_user(db, user_id, user.id)
+    return {'ok': True}

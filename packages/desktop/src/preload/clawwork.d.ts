@@ -325,6 +325,7 @@ export interface ClawWorkAPI {
     isAdmin?: boolean;
     isActive?: boolean;
   }) => Promise<IpcResult<AdminUser>>;
+  deleteAdminUser: (userId: string) => Promise<IpcResult<{ ok: boolean }>>;
 
   listModels: (gatewayId: string) => Promise<IpcResult>;
   listAgents: (gatewayId: string) => Promise<IpcResult>;

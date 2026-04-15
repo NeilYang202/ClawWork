@@ -139,6 +139,21 @@ export default function UserManagementSection() {
     [t],
   );
 
+  const removeUser = useCallback(
+    async (user: AdminUserRow) => {
+      const ok = window.confirm(`${t('common.remove')}: ${user.username}?`);
+      if (!ok) return;
+      const res = await window.clawwork.deleteAdminUser(user.id);
+      if (!res.ok) {
+        toast.error(res.error ?? t('settings.adminSaveFailed'));
+        return;
+      }
+      setUsers((prev) => prev.filter((item) => item.id !== user.id));
+      toast.success(t('common.remove'));
+    },
+    [t],
+  );
+
   if (!isAdmin) {
     return (
       <div className="type-label rounded-lg border border-[var(--border)] bg-[var(--bg-tertiary)] px-4 py-3 text-[var(--text-muted)]">
@@ -191,6 +206,9 @@ export default function UserManagementSection() {
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => void toggleUserActive(u)}>
                     {u.isActive ? t('settings.adminDisableUser') : t('settings.adminEnableUser')}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => void removeUser(u)}>
+                    {t('common.remove')}
                   </Button>
                 </div>
               </div>

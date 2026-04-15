@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron';
 import {
   createAdminUser,
+  deleteAdminUser,
   getAdminClientConfig,
   getAdminUsers,
   loginWithPassword,
@@ -141,6 +142,19 @@ export function registerAuthHandlers(): void {
       }
     },
   );
+
+  ipcMain.handle('auth:admin-users-delete', async (_event, payload: { userId: string }) => {
+    const auth = getAuthConfig();
+    const token = getAuthSession()?.token;
+    if (!token) return { ok: false, error: 'authentication required', errorCode: 'AUTH_REQUIRED' };
+    try {
+      await deleteAdminUser(auth, token, payload.userId);
+      await refreshRuntimeClientConfig(token);
+      return { ok: true, result: { ok: true } };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : 'delete user failed' };
+    }
+  });
 
   ipcMain.handle(
     'auth:admin-users-update',

@@ -14,7 +14,7 @@ function resolveOwnedUser(): string | null {
   try {
     const auth = getAuthStatus();
     if (!auth.authEnabled) return null;
-    if (!auth.authenticated) return null;
+    if (!auth.authenticated) return '__unauthenticated__';
     return getCurrentUserName();
   } catch {
     return null;
@@ -51,6 +51,7 @@ export function registerDataHandlers(): void {
       try {
         const db = getDb();
         const ownerUser = resolveOwnedUser();
+        if (ownerUser === '__unauthenticated__') return { ok: false, error: 'authentication required' };
         db.insert(tasks)
           .values({
             id: task.id,
@@ -105,6 +106,7 @@ export function registerDataHandlers(): void {
       try {
         const db = getDb();
         const ownerUser = resolveOwnedUser();
+        if (ownerUser === '__unauthenticated__') return { ok: false, error: 'authentication required' };
         if (ownerUser !== null) {
           const taskRow = db.select({ ownerUser: tasks.ownerUser }).from(tasks).where(eq(tasks.id, params.id)).get();
           if (!taskRow || taskRow.ownerUser !== ownerUser) return { ok: false, error: 'forbidden' };
@@ -150,6 +152,7 @@ export function registerDataHandlers(): void {
       try {
         const db = getDb();
         const ownerUser = resolveOwnedUser();
+        if (ownerUser === '__unauthenticated__') return { ok: false, error: 'authentication required' };
         if (ownerUser !== null) {
           const taskRow = db.select({ ownerUser: tasks.ownerUser }).from(tasks).where(eq(tasks.id, msg.taskId)).get();
           if (!taskRow || taskRow.ownerUser !== ownerUser) return { ok: false, error: 'forbidden' };
@@ -213,6 +216,7 @@ export function registerDataHandlers(): void {
     try {
       const db = getDb();
       const ownerUser = resolveOwnedUser();
+      if (ownerUser === '__unauthenticated__') return { ok: false, error: 'authentication required' };
       if (ownerUser !== null) {
         const taskRow = db.select({ ownerUser: tasks.ownerUser }).from(tasks).where(eq(tasks.id, params.id)).get();
         if (!taskRow || taskRow.ownerUser !== ownerUser) return { ok: false, error: 'forbidden' };
@@ -234,6 +238,7 @@ export function registerDataHandlers(): void {
     try {
       const db = getDb();
       const ownerUser = resolveOwnedUser();
+      if (ownerUser === '__unauthenticated__') return { ok: true, rows: [] };
       const query = db.select().from(tasks);
       const rows =
         ownerUser !== null
@@ -260,6 +265,7 @@ export function registerDataHandlers(): void {
     try {
       const db = getDb();
       const ownerUser = resolveOwnedUser();
+      if (ownerUser === '__unauthenticated__') return { ok: true, rows: [] };
       if (ownerUser !== null) {
         const taskRow = db.select({ ownerUser: tasks.ownerUser }).from(tasks).where(eq(tasks.id, params.taskId)).get();
         if (!taskRow || taskRow.ownerUser !== ownerUser) {
@@ -310,6 +316,7 @@ export function registerDataHandlers(): void {
       try {
         const db = getDb();
         const ownerUser = resolveOwnedUser();
+        if (ownerUser === '__unauthenticated__') return { ok: false, error: 'authentication required' };
         if (ownerUser !== null) {
           const taskRow = db
             .select({ ownerUser: tasks.ownerUser })
@@ -345,6 +352,7 @@ export function registerDataHandlers(): void {
     try {
       const db = getDb();
       const ownerUser = resolveOwnedUser();
+      if (ownerUser === '__unauthenticated__') return { ok: true, room: null, performers: [] };
       if (ownerUser !== null) {
         const taskRow = db.select({ ownerUser: tasks.ownerUser }).from(tasks).where(eq(tasks.id, params.taskId)).get();
         if (!taskRow || taskRow.ownerUser !== ownerUser) {

@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron';
+import { eq } from 'drizzle-orm';
 import { getGatewayClient, getAllGatewayClients, reconnectGateway } from '../ws/index.js';
 import { readConfig, ensureDeviceId } from '../workspace/config.js';
 import { isClawWorkSession, parseTaskIdFromSessionKey, parseAgentIdFromSessionKey } from '@clawwork/shared';
@@ -19,6 +20,8 @@ import { assertAuthToken, getAuthStatus, getCurrentUserName, isCurrentUserAdmin 
 import { getCachedRuntimeAccessControl } from '../auth/runtime-config.js';
 import { buildUploadInjection, uploadAttachmentsToObs } from '../obs/upload.js';
 import type { UploadedFileRef } from '../obs/upload.js';
+import { getDb, isDbReady } from '../db/index.js';
+import { tasks } from '../db/schema.js';
 
 async function gatewayRpc(
   gatewayId: string,
@@ -147,6 +150,22 @@ function filterSessionsByAgent(gatewayId: string, sessions: GatewaySessionRow[])
   const allowed = resolveAllowedAgents(gatewayId);
   if (allowed === null) return sessions;
   return sessions.filter((session) => allowed.has(parseAgentIdFromSessionKey(session.key)));
+}
+
+function canAccessTaskId(taskId: string | null): boolean {
+  const auth = getAuthStatus();
+  if (!auth.authEnabled) return true;
+  if (isCurrentUserAdmin()) return true;
+  if (!auth.authenticated) return false;
+  const user = getCurrentUserName();
+  if (!user || !taskId || !isDbReady()) return false;
+  const db = getDb();
+  const row = db.select({ ownerUser: tasks.ownerUser }).from(tasks).where(eq(tasks.id, taskId)).get();
+  return row?.ownerUser === user;
+}
+
+function filterSessionsByOwner(sessions: GatewaySessionRow[]): GatewaySessionRow[] {
+  return sessions.filter((session) => canAccessTaskId(parseTaskIdFromSessionKey(session.key)));
 }
 
 /** Parsed tool call for transport to renderer */
@@ -288,7 +307,7 @@ export function registerWsHandlers(): void {
       }
       try {
         const raw = (await gw.listSessions()) as SessionsListPayload;
-        const sessions = filterSessionsByAgent(payload.gatewayId, raw.sessions ?? []);
+        const sessions = filterSessionsByOwner(filterSessionsByAgent(payload.gatewayId, raw.sessions ?? []));
         return { ok: true, result: { ...raw, sessions } };
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'unknown error';
@@ -304,7 +323,7 @@ export function registerWsHandlers(): void {
     if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
     try {
       const raw = (await gw.listSessionsBySpawner(payload.spawnedBy)) as SessionsListPayload;
-      const sessions = filterSessionsByAgent(payload.gatewayId, raw.sessions ?? []);
+      const sessions = filterSessionsByOwner(filterSessionsByAgent(payload.gatewayId, raw.sessions ?? []));
       return { ok: true, result: { ...raw, sessions } };
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : 'unknown error' };
@@ -388,6 +407,7 @@ export function registerWsHandlers(): void {
           if (allowedAgents && !allowedAgents.has(parseAgentIdFromSessionKey(s.key))) continue;
           const taskId = parseTaskIdFromSessionKey(s.key);
           if (!taskId) continue;
+          if (!canAccessTaskId(taskId)) continue;
 
           const historyRaw = (await gw.getChatHistory(s.key, 200)) as unknown as ChatHistoryPayload;
           const rawMsgs = historyRaw.messages ?? [];
@@ -596,6 +616,9 @@ export function registerWsHandlers(): void {
       if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
       const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
       if (!agentGuard.ok) return agentGuard;
+      if (!canAccessTaskId(parseTaskIdFromSessionKey(payload.sessionKey))) {
+        return { ok: false, error: 'session is not allowed for current user', errorCode: 'SESSION_FORBIDDEN' };
+      }
       const gw = getGatewayClient(payload.gatewayId);
       if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
       try {
