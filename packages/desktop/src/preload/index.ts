@@ -36,6 +36,8 @@ function buildApi(): ClawWorkAPI {
     startSsoLogin: () => ipcRenderer.invoke('auth:sso-start'),
     pollSsoLogin: (deviceCode: string) => ipcRenderer.invoke('auth:sso-poll', { deviceCode }),
     logout: () => ipcRenderer.invoke('auth:logout'),
+    changePassword: (currentPassword: string, newPassword: string) =>
+      ipcRenderer.invoke('auth:change-password', { currentPassword, newPassword }),
     getAdminConfig: () => ipcRenderer.invoke('auth:admin-config-get'),
     updateAdminConfig: (payload: Record<string, unknown>) => ipcRenderer.invoke('auth:admin-config-update', payload),
     listAdminUsers: () => ipcRenderer.invoke('auth:admin-users-list'),
@@ -78,6 +80,10 @@ function buildApi(): ClawWorkAPI {
       ipcRenderer.invoke('ws:agents-files-get', { gatewayId, agentId, name }),
     setAgentFile: (gatewayId: string, agentId: string, name: string, content: string) =>
       ipcRenderer.invoke('ws:agents-files-set', { gatewayId, agentId, name, content }),
+    getMyAgentProfileDoc: (name: 'IDENTITY.md' | 'USER.md' | 'SOUL.md') =>
+      ipcRenderer.invoke('ws:profile-agent-doc-get', { name }),
+    setMyAgentProfileDoc: (name: 'IDENTITY.md' | 'USER.md' | 'SOUL.md', content: string) =>
+      ipcRenderer.invoke('ws:profile-agent-doc-set', { name, content }),
     patchSession: (gatewayId: string, sessionKey: string, patch: Record<string, unknown>) =>
       ipcRenderer.invoke('ws:session-patch', { gatewayId, sessionKey, patch }),
     getToolsCatalog: (gatewayId: string, agentId?: string) =>

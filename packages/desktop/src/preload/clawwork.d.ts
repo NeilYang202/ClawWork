@@ -307,6 +307,7 @@ export interface ClawWorkAPI {
   >;
   pollSsoLogin: (deviceCode: string) => Promise<IpcResult<{ done: boolean; status?: AuthStatus }>>;
   logout: () => Promise<IpcResult<AuthStatus>>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<IpcResult<{ ok: boolean }>>;
   getAdminConfig: () => Promise<IpcResult<Record<string, unknown>>>;
   updateAdminConfig: (payload: Record<string, unknown>) => Promise<IpcResult<Record<string, unknown>>>;
   listAdminUsers: () => Promise<IpcResult<AdminUser[]>>;
@@ -347,6 +348,8 @@ export interface ClawWorkAPI {
   listAgentFiles: (gatewayId: string, agentId: string) => Promise<IpcResult>;
   getAgentFile: (gatewayId: string, agentId: string, name: string) => Promise<IpcResult>;
   setAgentFile: (gatewayId: string, agentId: string, name: string, content: string) => Promise<IpcResult>;
+  getMyAgentProfileDoc: (name: 'IDENTITY.md' | 'USER.md' | 'SOUL.md') => Promise<IpcResult>;
+  setMyAgentProfileDoc: (name: 'IDENTITY.md' | 'USER.md' | 'SOUL.md', content: string) => Promise<IpcResult>;
   patchSession: (gatewayId: string, sessionKey: string, patch: Record<string, unknown>) => Promise<IpcResult>;
   getToolsCatalog: (gatewayId: string, agentId?: string) => Promise<IpcResult>;
   getSkillsStatus: (gatewayId: string, agentId?: string) => Promise<IpcResult>;

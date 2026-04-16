@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import verify_password, create_access_token
 from app.db.models import User, AuthDeviceCode
-from app.schemas.auth import LoginIn, LoginOut, AuthUserOut, SsoStartIn, SsoStartOut, SsoPollIn, SsoPollOut
+from app.schemas.auth import LoginIn, LoginOut, AuthUserOut, SsoStartIn, SsoStartOut, SsoPollIn, SsoPollOut, ChangePasswordIn
+from app.core.security import hash_password
 
 
 def _to_auth_user(user: User) -> AuthUserOut:
@@ -74,3 +75,13 @@ async def sso_poll(db: AsyncSession, payload: SsoPollIn) -> SsoPollOut:
     token = create_access_token(user.id)
     expires_at = datetime.now(timezone.utc) + timedelta(hours=12)
     return SsoPollOut(done=True, token=token, expiresAt=expires_at, provider=row.provider or 'sso', user=_to_auth_user(user))
+
+
+async def change_password(db: AsyncSession, user: User, payload: ChangePasswordIn) -> None:
+    if not verify_password(payload.currentPassword, user.password_hash):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='current password is incorrect')
+    if len(payload.newPassword) < 6:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='new password too short')
+    user.password_hash = hash_password(payload.newPassword)
+    user.updated_at = datetime.now(timezone.utc)
+    await db.commit()

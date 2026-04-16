@@ -233,6 +233,11 @@ export function createChatComposer(deps: ChatComposerDeps) {
             return turn && (turn.streamingText || turn.streamingThinking || turn.toolCalls.length > 0);
           });
           if (stillProcessing || anyResponded) return;
+          if (task.ensemble && deps.getRoomState) {
+            const room = deps.getRoomState(task.id);
+            const collaborativeInFlight = room && room.status === 'active' && room.performers.length > 0;
+            if (collaborativeInFlight) return;
+          }
           const appError = buildAppError({
             source: 'gateway',
             stage: 'lifecycle',

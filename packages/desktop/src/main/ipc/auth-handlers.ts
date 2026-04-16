@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron';
 import {
+  changePassword,
   createAdminUser,
   deleteAdminUser,
   getAdminClientConfig,
@@ -83,6 +84,18 @@ export function registerAuthHandlers(): void {
   ipcMain.handle('auth:logout', () => {
     clearAuthSession();
     return { ok: true, result: getAuthStatus() };
+  });
+
+  ipcMain.handle('auth:change-password', async (_event, payload: { currentPassword: string; newPassword: string }) => {
+    const auth = getAuthConfig();
+    const token = getAuthSession()?.token;
+    if (!token) return { ok: false, error: 'authentication required', errorCode: 'AUTH_REQUIRED' };
+    try {
+      const result = await changePassword(auth, token, payload);
+      return { ok: true, result };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : 'change password failed' };
+    }
   });
 
   ipcMain.handle('auth:admin-config-get', async () => {

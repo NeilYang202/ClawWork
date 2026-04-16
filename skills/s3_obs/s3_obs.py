@@ -16,7 +16,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 
-ENV_FILE_PATH = "/appl/openclaw-server/.env"
+ENV_FILE_PATH = "/appl/env/.obsenv"
 
 
 @dataclass

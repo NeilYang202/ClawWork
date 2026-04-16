@@ -71,5 +71,17 @@ CREATE TABLE IF NOT EXISTS obs_upload_records (
 );
 
 CREATE INDEX IF NOT EXISTS idx_uab_username ON user_agent_bindings(username);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_indexes
+    WHERE schemaname = 'public' AND indexname = 'uq_uab_username_single'
+  ) AND NOT EXISTS (
+    SELECT username FROM user_agent_bindings GROUP BY username HAVING COUNT(*) > 1
+  ) THEN
+    CREATE UNIQUE INDEX uq_uab_username_single ON user_agent_bindings(username);
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_obs_records_session ON obs_upload_records(session_key);
 CREATE INDEX IF NOT EXISTS idx_obs_records_user_session ON obs_upload_records(username, session_key);

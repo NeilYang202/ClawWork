@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from fastapi import HTTPException, status
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -116,6 +117,19 @@ async def update_admin_config(db: AsyncSession, payload: AdminConfig) -> AdminCo
             update(User)
             .where(User.username.in_([x.lower() for x in payload.accessControl.adminUsers]))
             .values(is_admin=True)
+        )
+
+    binding_count_by_user: dict[str, int] = {}
+    for item in payload.accessControl.bindings:
+        username = item.username.strip().lower()
+        if not username:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='binding username required')
+        binding_count_by_user[username] = binding_count_by_user.get(username, 0) + 1
+    conflict_users = [username for username, count in binding_count_by_user.items() if count > 1]
+    if conflict_users:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'user can only bind one agent: {", ".join(conflict_users)}',
         )
 
     await db.execute(delete(UserAgentBinding))

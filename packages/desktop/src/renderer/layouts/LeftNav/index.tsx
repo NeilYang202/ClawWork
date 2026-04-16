@@ -20,8 +20,10 @@ import {
   Clock,
   Users,
   LogOut,
+  UserCircle2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { useTaskStore } from '@/stores/taskStore';
 import { useMessageStore } from '@/stores/messageStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -40,12 +42,24 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import ConfirmDialog from '@/components/semantic/ConfirmDialog';
+import { useDialogGuard } from '@/hooks/useDialogGuard';
 import { exportToFiles, exportToLocal } from '@/lib/export-session';
 import TaskItem from './TaskItem';
 import type { TaskStatus } from '@clawwork/shared';
 import EmptyState from '@/components/semantic/EmptyState';
 
 type ConfirmAction = 'reset' | 'delete' | null;
+type AuthUser = {
+  userId?: string;
+  userName?: string;
+  email?: string;
+  displayName?: string;
+  provider?: string;
+  isAdmin?: boolean;
+};
+
+type ProfileDocName = 'IDENTITY.md' | 'USER.md' | 'SOUL.md';
 
 function IconButton({
   icon: Icon,
@@ -145,6 +159,35 @@ export default function LeftNav() {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [confirmTaskId, setConfirmTaskId] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [passwordCurrent, setPasswordCurrent] = useState('');
+  const [passwordNext, setPasswordNext] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [profileDocOpen, setProfileDocOpen] = useState(false);
+  const [profileDocName, setProfileDocName] = useState<ProfileDocName>('IDENTITY.md');
+  const [profileDocInitialContent, setProfileDocInitialContent] = useState('');
+  const [profileDocContent, setProfileDocContent] = useState('');
+  const [profileDocLoading, setProfileDocLoading] = useState(false);
+  const [profileDocSaving, setProfileDocSaving] = useState(false);
+  const currentUserName = currentUser?.displayName || currentUser?.userName || currentUser?.email || t('auth.user');
+  const docTitleMap: Record<ProfileDocName, string> = {
+    'IDENTITY.md': t('profile.aiIdentity'),
+    'USER.md': t('profile.userProfile'),
+    'SOUL.md': t('profile.aiThinking'),
+  };
+  const profileDocDirty = profileDocContent !== profileDocInitialContent;
+  const {
+    confirmOpen: profileDocConfirmOpen,
+    guardedOpenChange: guardedProfileDocOpenChange,
+    contentProps: profileDocContentProps,
+    confirmDiscard: confirmProfileDocDiscard,
+    cancelDiscard: cancelProfileDocDiscard,
+  } = useDialogGuard({
+    isDirty: () => profileDocDirty,
+    onConfirmClose: () => setProfileDocOpen(false),
+  });
 
   const findTask = (taskId: string) => useTaskStore.getState().tasks.find((t) => t.id === taskId);
 
@@ -239,6 +282,49 @@ export default function LeftNav() {
     return () => clearTimeout(timerRef.current);
   }, [searchQuery]);
 
+  useEffect(() => {
+    window.clawwork
+      .getAuthStatus()
+      .then((status) => {
+        setCurrentUser((status.user as AuthUser | undefined) ?? null);
+      })
+      .catch(() => {});
+  }, []);
+
+  const openProfileDoc = useCallback(
+    async (name: ProfileDocName) => {
+      setProfileDocName(name);
+      setProfileDocLoading(true);
+      setProfileDocOpen(true);
+      const res = await window.clawwork.getMyAgentProfileDoc(name);
+      setProfileDocLoading(false);
+      if (!res.ok || !res.result) {
+        toast.error(res.error ?? t('profile.docLoadFailed'));
+        setProfileDocInitialContent('');
+        setProfileDocContent('');
+        return;
+      }
+      const data = res.result as { file?: { content?: string } };
+      const content = data.file?.content ?? '';
+      setProfileDocInitialContent(content);
+      setProfileDocContent(content);
+    },
+    [t],
+  );
+
+  const saveProfileDoc = useCallback(async () => {
+    setProfileDocSaving(true);
+    const res = await window.clawwork.setMyAgentProfileDoc(profileDocName, profileDocContent);
+    setProfileDocSaving(false);
+    if (!res.ok) {
+      toast.error(res.error ?? t('profile.docSaveFailed'));
+      return;
+    }
+    setProfileDocInitialContent(profileDocContent);
+    setProfileDocOpen(false);
+    toast.success(t('profile.docSaveSuccess'));
+  }, [profileDocContent, profileDocName, t]);
+
   const handleSelectResult = (result: SearchResult): void => {
     setSearchQuery('');
     setSearchResults([]);
@@ -309,6 +395,128 @@ export default function LeftNav() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog
+        open={profileOpen}
+        onOpenChange={(open) => {
+          setProfileOpen(open);
+          if (!open) {
+            setPasswordCurrent('');
+            setPasswordNext('');
+            setPasswordConfirm('');
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('profile.title')}</DialogTitle>
+            <DialogDescription>{t('profile.subtitle')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="rounded-md border border-[var(--border)] bg-[var(--bg-tertiary)] p-3 type-label text-[var(--text-primary)]">
+              <div>
+                {t('auth.username')}: {currentUser?.userName || '-'}
+              </div>
+              <div>
+                {t('auth.displayName')}: {currentUser?.displayName || '-'}
+              </div>
+              <div>
+                {t('auth.email')}: {currentUser?.email || '-'}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <Button variant="outline" size="sm" onClick={() => void openProfileDoc('IDENTITY.md')}>
+                  {t('profile.aiIdentity')}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => void openProfileDoc('USER.md')}>
+                  {t('profile.userProfile')}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => void openProfileDoc('SOUL.md')}>
+                  {t('profile.aiThinking')}
+                </Button>
+              </div>
+              <input
+                type="password"
+                value={passwordCurrent}
+                onChange={(e) => setPasswordCurrent(e.target.value)}
+                placeholder={t('profile.currentPassword')}
+                className="w-full h-[var(--density-control-height-sm)] px-3 rounded-md bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] type-body glow-focus focus:border-transparent transition-all"
+              />
+              <input
+                type="password"
+                value={passwordNext}
+                onChange={(e) => setPasswordNext(e.target.value)}
+                placeholder={t('profile.newPassword')}
+                className="w-full h-[var(--density-control-height-sm)] px-3 rounded-md bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] type-body glow-focus focus:border-transparent transition-all"
+              />
+              <input
+                type="password"
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+                placeholder={t('profile.confirmPassword')}
+                className="w-full h-[var(--density-control-height-sm)] px-3 rounded-md bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] type-body glow-focus focus:border-transparent transition-all"
+              />
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setProfileOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!passwordCurrent.trim() || !passwordNext.trim() || !passwordConfirm.trim()) return;
+                if (passwordNext !== passwordConfirm) return toast.error(t('profile.passwordMismatch'));
+                setPasswordSaving(true);
+                const res = await window.clawwork.changePassword(passwordCurrent, passwordNext);
+                setPasswordSaving(false);
+                if (!res.ok) {
+                  return toast.error(res.error ?? t('profile.changePasswordFailed'));
+                }
+                setPasswordCurrent('');
+                setPasswordNext('');
+                setPasswordConfirm('');
+                setProfileOpen(false);
+                toast.success(t('profile.changePasswordSuccess'));
+              }}
+              disabled={passwordSaving}
+            >
+              {passwordSaving ? t('settings.saving') : t('profile.changePassword')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={profileDocOpen} onOpenChange={guardedProfileDocOpenChange}>
+        <DialogContent {...profileDocContentProps}>
+          <DialogHeader>
+            <DialogTitle>{docTitleMap[profileDocName]}</DialogTitle>
+            <DialogDescription>{profileDocName}</DialogDescription>
+          </DialogHeader>
+          <textarea
+            value={profileDocContent}
+            onChange={(e) => setProfileDocContent(e.target.value)}
+            disabled={profileDocLoading || profileDocSaving}
+            className="min-h-[360px] w-full resize-y rounded-md border border-[var(--border)] bg-[var(--bg-primary)] p-3 text-[var(--text-primary)] outline-none focus:border-[var(--border-accent)] disabled:opacity-60"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => guardedProfileDocOpenChange(false)} disabled={profileDocSaving}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={() => void saveProfileDoc()} disabled={profileDocLoading || profileDocSaving}>
+              {profileDocSaving ? t('settings.saving') : t('common.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <ConfirmDialog
+        open={profileDocConfirmOpen}
+        title={t('common.discardChangesTitle')}
+        description={t('common.discardChangesDesc')}
+        confirmLabel={t('common.discard')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={confirmProfileDocDiscard}
+        onCancel={cancelProfileDocDiscard}
+      />
     </>
   );
 
@@ -395,6 +603,12 @@ export default function LeftNav() {
             tooltip={t('leftNav.scheduledTasks')}
             onClick={() => setMainView('cron')}
             className={navActiveClass(mainView === 'cron')}
+          />
+          <IconButton
+            icon={UserCircle2}
+            tooltip={currentUserName}
+            onClick={() => setProfileOpen(true)}
+            className="text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
           />
           <IconButton
             icon={Archive}
@@ -543,6 +757,13 @@ export default function LeftNav() {
 
       <div className="flex-shrink-0 px-3 py-2 border-t border-[var(--border)]">
         <div className="flex items-center">
+          <IconButton
+            icon={UserCircle2}
+            tooltip={currentUserName}
+            onClick={() => setProfileOpen(true)}
+            tooltipSide="top"
+            className="text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+          />
           <IconButton
             icon={Archive}
             tooltip={t('leftNav.archivedChats')}

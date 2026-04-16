@@ -58,6 +58,11 @@ class SsoPollOut(BaseModel):
     user: AuthUserOut | None = None
 
 
+class ChangePasswordIn(BaseModel):
+    currentPassword: str
+    newPassword: str
+
+
 class AdminCreateUserIn(BaseModel):
     username: str
     password: str

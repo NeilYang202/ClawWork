@@ -45,7 +45,10 @@ class AppConfig(Base):
 
 class UserAgentBinding(Base):
     __tablename__ = 'user_agent_bindings'
-    __table_args__ = (UniqueConstraint('username', 'gateway_id', 'agent_id', name='uq_user_gateway_agent'),)
+    __table_args__ = (
+        UniqueConstraint('username', name='uq_user_single_agent_binding'),
+        UniqueConstraint('username', 'gateway_id', 'agent_id', name='uq_user_gateway_agent'),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     username: Mapped[str] = mapped_column(String(128), nullable=False)

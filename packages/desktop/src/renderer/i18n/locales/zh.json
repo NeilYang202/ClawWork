@@ -375,6 +375,23 @@
     "title": "需要设备配对",
     "waiting": "等待批准中…"
   },
+  "profile": {
+    "aiIdentity": "AI个性化",
+    "aiThinking": "AI思考方式",
+    "changePassword": "修改密码",
+    "changePasswordFailed": "修改密码失败",
+    "changePasswordSuccess": "密码修改成功",
+    "confirmPassword": "确认新密码",
+    "currentPassword": "当前密码",
+    "docLoadFailed": "加载文档失败",
+    "docSaveFailed": "保存文档失败",
+    "docSaveSuccess": "文档保存成功",
+    "newPassword": "新密码",
+    "passwordMismatch": "两次输入的新密码不一致",
+    "subtitle": "查看当前账号信息并修改密码",
+    "title": "当前用户",
+    "userProfile": "自我描述"
+  },
   "rightPanel": {
     "artifacts": "产物",
     "context": "上下文",

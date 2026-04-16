@@ -2,7 +2,12 @@ import { ipcMain } from 'electron';
 import { eq } from 'drizzle-orm';
 import { getGatewayClient, getAllGatewayClients, reconnectGateway } from '../ws/index.js';
 import { readConfig, ensureDeviceId } from '../workspace/config.js';
-import { isClawWorkSession, parseTaskIdFromSessionKey, parseAgentIdFromSessionKey } from '@clawwork/shared';
+import {
+  isClawWorkSession,
+  isSubagentSession,
+  parseTaskIdFromSessionKey,
+  parseAgentIdFromSessionKey,
+} from '@clawwork/shared';
 import { parseToolArgs } from '@clawwork/core';
 import type {
   ApprovalDecision,
@@ -21,7 +26,7 @@ import { getCachedRuntimeAccessControl } from '../auth/runtime-config.js';
 import { buildUploadInjection, uploadAttachmentsToObs } from '../obs/upload.js';
 import type { UploadedFileRef } from '../obs/upload.js';
 import { getDb, isDbReady } from '../db/index.js';
-import { tasks } from '../db/schema.js';
+import { tasks, taskRoomSessions } from '../db/schema.js';
 
 async function gatewayRpc(
   gatewayId: string,
@@ -97,6 +102,7 @@ interface ChatHistoryPayload {
 
 const INTERNAL_ASSISTANT_MARKERS = new Set(['NO_REPLY']);
 const uploadedRefsBySession = new Map<string, UploadedFileRef[]>();
+const PROFILE_DOC_NAMES = new Set(['IDENTITY.md', 'USER.md', 'SOUL.md']);
 
 interface AgentCatalogPayload {
   defaultId?: string;
@@ -136,6 +142,39 @@ function assertInfraManageAllowed(): { ok: true } | { ok: false; error: string; 
   return { ok: false, error: 'admin required', errorCode: 'ADMIN_REQUIRED' };
 }
 
+function resolveCurrentUserSingleBinding(
+  gatewayId?: string,
+): { ok: true; gatewayId: string; agentId: string } | { ok: false; error: string; errorCode: string } {
+  const auth = getAuthStatus();
+  if (!auth.authEnabled) {
+    return { ok: false, error: 'auth not enabled', errorCode: 'AUTH_NOT_ENABLED' };
+  }
+  if (!auth.authenticated) {
+    return { ok: false, error: 'authentication required', errorCode: 'AUTH_REQUIRED' };
+  }
+  const user = getCurrentUserName();
+  if (!user) {
+    return { ok: false, error: 'authentication required', errorCode: 'AUTH_REQUIRED' };
+  }
+  const ac = getCachedRuntimeAccessControl();
+  if (!ac || ac.enabled === false) {
+    return { ok: false, error: 'access control not configured', errorCode: 'ACCESS_CONTROL_NOT_CONFIGURED' };
+  }
+  const normalizedUser = user.trim().toLowerCase();
+  const matched = (ac.bindings ?? []).filter((b) => {
+    if (b.username.trim().toLowerCase() !== normalizedUser) return false;
+    if (gatewayId && b.gatewayId !== gatewayId) return false;
+    return Boolean(b.gatewayId && b.agentId);
+  });
+  if (matched.length === 0) {
+    return { ok: false, error: 'no agent binding for current user', errorCode: 'AGENT_BINDING_NOT_FOUND' };
+  }
+  if (matched.length > 1) {
+    return { ok: false, error: 'multiple agent bindings for current user', errorCode: 'AGENT_BINDING_CONFLICT' };
+  }
+  return { ok: true, gatewayId: matched[0].gatewayId, agentId: matched[0].agentId };
+}
+
 function filterAgentCatalog(gatewayId: string, payload: Record<string, unknown>): Record<string, unknown> {
   const allowed = resolveAllowedAgents(gatewayId);
   if (allowed === null) return payload;
@@ -162,6 +201,42 @@ function canAccessTaskId(taskId: string | null): boolean {
   const db = getDb();
   const row = db.select({ ownerUser: tasks.ownerUser }).from(tasks).where(eq(tasks.id, taskId)).get();
   return row?.ownerUser === user;
+}
+
+function canAccessSessionKey(sessionKey: string): boolean {
+  const taskId = parseTaskIdFromSessionKey(sessionKey);
+  if (taskId) return canAccessTaskId(taskId);
+  if (!isSubagentSession(sessionKey)) return false;
+
+  const auth = getAuthStatus();
+  if (!auth.authEnabled) return true;
+  if (isCurrentUserAdmin()) return true;
+  if (!auth.authenticated) return false;
+  const user = getCurrentUserName();
+  if (!user || !isDbReady()) return false;
+  const db = getDb();
+  const room = db
+    .select({ taskId: taskRoomSessions.taskId })
+    .from(taskRoomSessions)
+    .where(eq(taskRoomSessions.sessionKey, sessionKey))
+    .get();
+  if (!room?.taskId) return false;
+  return canAccessTaskId(room.taskId);
+}
+
+function assertSessionAllowed(
+  gatewayId: string,
+  sessionKey: string,
+): { ok: true } | { ok: false; error: string; errorCode: string } {
+  if (isSubagentSession(sessionKey)) {
+    if (canAccessSessionKey(sessionKey)) return { ok: true };
+    return { ok: false, error: 'session is not allowed for current user', errorCode: 'SESSION_FORBIDDEN' };
+  }
+
+  const agentGuard = assertAgentAllowed(gatewayId, parseAgentIdFromSessionKey(sessionKey));
+  if (!agentGuard.ok) return agentGuard;
+  if (canAccessSessionKey(sessionKey)) return { ok: true };
+  return { ok: false, error: 'session is not allowed for current user', errorCode: 'SESSION_FORBIDDEN' };
 }
 
 function filterSessionsByOwner(sessions: GatewaySessionRow[]): GatewaySessionRow[] {
@@ -195,8 +270,8 @@ export function registerWsHandlers(): void {
       if (!authGuard.ok) {
         return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
       }
-      const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
-      if (!agentGuard.ok) return agentGuard;
+      const sessionGuard = assertSessionAllowed(payload.gatewayId, payload.sessionKey);
+      if (!sessionGuard.ok) return sessionGuard;
       const taskId = parseTaskIdFromSessionKey(payload.sessionKey) ?? undefined;
       getDebugLogger().info({
         domain: 'ipc',
@@ -275,8 +350,8 @@ export function registerWsHandlers(): void {
     ) => {
       const authGuard = assertAuthToken();
       if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
-      const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
-      if (!agentGuard.ok) return agentGuard;
+      const sessionGuard = assertSessionAllowed(payload.gatewayId, payload.sessionKey);
+      if (!sessionGuard.ok) return sessionGuard;
       const gw = getGatewayClient(payload.gatewayId);
       if (!gw?.isConnected) {
         return { ok: false, error: 'gateway not connected' };
@@ -319,11 +394,14 @@ export function registerWsHandlers(): void {
   ipcMain.handle('ws:list-sessions-by-spawner', async (_event, payload: { gatewayId: string; spawnedBy: string }) => {
     const authGuard = assertAuthToken();
     if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
+    if (!canAccessTaskId(parseTaskIdFromSessionKey(payload.spawnedBy))) {
+      return { ok: true, result: { sessions: [] } };
+    }
     const gw = getGatewayClient(payload.gatewayId);
     if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
     try {
       const raw = (await gw.listSessionsBySpawner(payload.spawnedBy)) as SessionsListPayload;
-      const sessions = filterSessionsByOwner(filterSessionsByAgent(payload.gatewayId, raw.sessions ?? []));
+      const sessions = raw.sessions ?? [];
       return { ok: true, result: { ...raw, sessions } };
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : 'unknown error' };
@@ -602,6 +680,30 @@ export function registerWsHandlers(): void {
     },
   );
 
+  ipcMain.handle('ws:profile-agent-doc-get', async (_event, payload: { name: string }) => {
+    const authGuard = assertAuthToken();
+    if (!authGuard.ok) return authGuard;
+    const name = payload.name?.trim();
+    if (!PROFILE_DOC_NAMES.has(name)) {
+      return { ok: false, error: 'unsupported profile doc', errorCode: 'PROFILE_DOC_UNSUPPORTED' };
+    }
+    const binding = resolveCurrentUserSingleBinding();
+    if (!binding.ok) return binding;
+    return gatewayRpc(binding.gatewayId, (gw) => gw.getAgentFile(binding.agentId, name));
+  });
+
+  ipcMain.handle('ws:profile-agent-doc-set', async (_event, payload: { name: string; content: string }) => {
+    const authGuard = assertAuthToken();
+    if (!authGuard.ok) return authGuard;
+    const name = payload.name?.trim();
+    if (!PROFILE_DOC_NAMES.has(name)) {
+      return { ok: false, error: 'unsupported profile doc', errorCode: 'PROFILE_DOC_UNSUPPORTED' };
+    }
+    const binding = resolveCurrentUserSingleBinding();
+    if (!binding.ok) return binding;
+    return gatewayRpc(binding.gatewayId, (gw) => gw.setAgentFile(binding.agentId, name, payload.content ?? ''));
+  });
+
   ipcMain.handle(
     'ws:session-patch',
     async (
@@ -614,11 +716,8 @@ export function registerWsHandlers(): void {
     ) => {
       const authGuard = assertAuthToken();
       if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
-      const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
-      if (!agentGuard.ok) return agentGuard;
-      if (!canAccessTaskId(parseTaskIdFromSessionKey(payload.sessionKey))) {
-        return { ok: false, error: 'session is not allowed for current user', errorCode: 'SESSION_FORBIDDEN' };
-      }
+      const sessionGuard = assertSessionAllowed(payload.gatewayId, payload.sessionKey);
+      if (!sessionGuard.ok) return sessionGuard;
       const gw = getGatewayClient(payload.gatewayId);
       if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
       try {
@@ -645,8 +744,8 @@ export function registerWsHandlers(): void {
   ipcMain.handle('ws:abort-chat', async (_event, payload: { gatewayId: string; sessionKey: string }) => {
     const authGuard = assertAuthToken();
     if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
-    const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
-    if (!agentGuard.ok) return agentGuard;
+    const sessionGuard = assertSessionAllowed(payload.gatewayId, payload.sessionKey);
+    if (!sessionGuard.ok) return sessionGuard;
     const gw = getGatewayClient(payload.gatewayId);
     if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
     try {
@@ -754,8 +853,8 @@ export function registerWsHandlers(): void {
   );
 
   ipcMain.handle('ws:session-usage', async (_event, payload: { gatewayId: string; sessionKey: string }) => {
-    const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
-    if (!agentGuard.ok) return agentGuard;
+    const sessionGuard = assertSessionAllowed(payload.gatewayId, payload.sessionKey);
+    if (!sessionGuard.ok) return sessionGuard;
     return gatewayRpc(payload.gatewayId, (gw) => gw.getSessionUsage({ key: payload.sessionKey }));
   });
 
@@ -794,8 +893,8 @@ export function registerWsHandlers(): void {
     ) => {
       const authGuard = assertAuthToken();
       if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
-      const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
-      if (!agentGuard.ok) return agentGuard;
+      const sessionGuard = assertSessionAllowed(payload.gatewayId, payload.sessionKey);
+      if (!sessionGuard.ok) return sessionGuard;
       const gw = getGatewayClient(payload.gatewayId);
       if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
       try {
@@ -820,8 +919,8 @@ export function registerWsHandlers(): void {
     ) => {
       const authGuard = assertAuthToken();
       if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
-      const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
-      if (!agentGuard.ok) return agentGuard;
+      const sessionGuard = assertSessionAllowed(payload.gatewayId, payload.sessionKey);
+      if (!sessionGuard.ok) return sessionGuard;
       const gw = getGatewayClient(payload.gatewayId);
       if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
       try {
@@ -847,8 +946,8 @@ export function registerWsHandlers(): void {
     ) => {
       const authGuard = assertAuthToken();
       if (!authGuard.ok) return { ok: false, error: authGuard.error, errorCode: authGuard.errorCode };
-      const agentGuard = assertAgentAllowed(payload.gatewayId, parseAgentIdFromSessionKey(payload.sessionKey));
-      if (!agentGuard.ok) return agentGuard;
+      const sessionGuard = assertSessionAllowed(payload.gatewayId, payload.sessionKey);
+      if (!sessionGuard.ok) return sessionGuard;
       const gw = getGatewayClient(payload.gatewayId);
       if (!gw?.isConnected) return { ok: false, error: 'gateway not connected' };
       try {

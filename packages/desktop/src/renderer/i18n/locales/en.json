@@ -375,6 +375,23 @@
     "title": "Device Pairing Required",
     "waiting": "Waiting for approval…"
   },
+  "profile": {
+    "aiIdentity": "AI Identity",
+    "aiThinking": "AI Thinking",
+    "changePassword": "Change Password",
+    "changePasswordFailed": "Failed to change password",
+    "changePasswordSuccess": "Password changed successfully",
+    "confirmPassword": "Confirm New Password",
+    "currentPassword": "Current Password",
+    "docLoadFailed": "Failed to load file",
+    "docSaveFailed": "Failed to save file",
+    "docSaveSuccess": "File saved successfully",
+    "newPassword": "New Password",
+    "passwordMismatch": "The two new passwords do not match",
+    "subtitle": "View your account information and update password",
+    "title": "Current User",
+    "userProfile": "User Profile"
+  },
   "rightPanel": {
     "artifacts": "Artifacts",
     "context": "Context",

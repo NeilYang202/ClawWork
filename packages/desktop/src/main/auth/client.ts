@@ -248,6 +248,15 @@ export async function pollSso(
   };
 }
 
+export async function changePassword(
+  auth: AuthProviderConfig,
+  token: string,
+  payload: { currentPassword: string; newPassword: string },
+): Promise<{ ok: boolean }> {
+  const baseUrl = ensureServiceUrl(auth);
+  return postJson<{ ok: boolean }>(`${baseUrl}/api/auth/change-password`, payload, token);
+}
+
 export async function getPublicClientConfig(auth: AuthProviderConfig): Promise<PublicClientConfig> {
   const baseUrl = ensureServiceUrl(auth);
   return getJson<PublicClientConfig>(`${baseUrl}/api/client/public-config`);
