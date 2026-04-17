@@ -11,12 +11,17 @@ import re
 import sys
 import zipfile
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+from urllib.request import Request, urlopen
+
+from redis import Redis
 
 
 ENV_FILE_PATH = "/appl/env/.obsenv"
+FILE_EVENT_STREAM = "obs:file-events"
 
 
 @dataclass
@@ -73,6 +78,30 @@ class S3Settings:
         )
 
 
+@dataclass
+class RedisSettings:
+    url: str | None
+    host: str
+    port: int
+    db: int
+    password: str | None
+
+    @classmethod
+    def from_env_values(cls, values: dict[str, str]) -> "RedisSettings":
+        url = values.get("REDIS_URL", "").strip() or None
+        host = values.get("REDIS_HOST", "").strip() or "127.0.0.1"
+        port = int((values.get("REDIS_PORT", "").strip() or "6379"))
+        db = int((values.get("REDIS_DB", "").strip() or "0"))
+        password = values.get("REDIS_PASSWORD", "").strip() or None
+        return cls(
+            url=url,
+            host=host,
+            port=port,
+            db=db,
+            password=password,
+        )
+
+
 def _s3_client(cfg: S3Settings):
     import boto3
     from botocore.config import Config
@@ -86,6 +115,23 @@ def _s3_client(cfg: S3Settings):
         verify=True,
         config=Config(s3={"addressing_style": "path"}),
     )
+
+
+def _redis_client(cfg: RedisSettings) -> Redis:
+    if cfg.url:
+        return Redis.from_url(cfg.url, decode_responses=True)
+    return Redis(
+        host=cfg.host,
+        port=cfg.port,
+        db=cfg.db,
+        password=cfg.password,
+        decode_responses=True,
+    )
+
+
+def _publish_upload_event(redis_cfg: RedisSettings, payload: dict[str, str]) -> str:
+    client = _redis_client(redis_cfg)
+    return str(client.xadd(FILE_EVENT_STREAM, payload))
 
 
 def _safe_slug(value: str, fallback: str) -> str:
@@ -266,8 +312,30 @@ def _parse_s3_source(source: str, default_bucket: str, endpoint_url: str) -> tup
     raise ValueError("empty source")
 
 
+def _download_from_http(source: str) -> tuple[bytes, str]:
+    req = Request(source, headers={"User-Agent": "s3-obs-skill/1.0"})
+    with urlopen(req, timeout=60) as resp:
+        body = resp.read()
+        content_disposition = (resp.headers.get("Content-Disposition") or "").strip()
+    return body, content_disposition
+
+
+def _filename_from_content_disposition(content_disposition: str) -> str:
+    if not content_disposition:
+        return ""
+    m = re.search(r"filename\*=(?:UTF-8'')?([^;]+)", content_disposition, flags=re.IGNORECASE)
+    if m:
+        return m.group(1).strip().strip('"').strip("'")
+    m = re.search(r"filename=([^;]+)", content_disposition, flags=re.IGNORECASE)
+    if m:
+        return m.group(1).strip().strip('"').strip("'")
+    return ""
+
+
 def cmd_upload(args: argparse.Namespace) -> dict[str, Any]:
+    values = _load_env_file(Path(ENV_FILE_PATH))
     cfg = S3Settings.from_env_file()
+    redis_cfg = RedisSettings.from_env_values(values)
     workspace = Path(args.workspace).expanduser().resolve()
     file_path = Path(args.file).expanduser().resolve()
 
@@ -289,6 +357,28 @@ def cmd_upload(args: argparse.Namespace) -> dict[str, Any]:
             ContentType=content_type,
         )
 
+    session_key = (args.session_key or args.session_id).strip()
+    gateway_id = (args.gateway_id or "default").strip()
+    task_id = (args.task_id or "").strip()
+    normalized_user = _safe_slug(args.user_id, "unknown-user").lower()
+    download_url = _public_download_url(cfg, cfg.bucket, key)
+    event_payload = {
+        "type": "file_uploaded",
+        "record_id": "",
+        "user_id": normalized_user,
+        "username": normalized_user,
+        "gateway_id": gateway_id,
+        "session_key": session_key,
+        "task_id": task_id,
+        "file_name": file_path.name,
+        "mime_type": content_type,
+        "byte_size": str(file_path.stat().st_size),
+        "object_key": key,
+        "url": download_url,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    event_id = _publish_upload_event(redis_cfg, event_payload)
+
     return {
         "ok": True,
         "action": "upload",
@@ -296,9 +386,11 @@ def cmd_upload(args: argparse.Namespace) -> dict[str, Any]:
         "key": key,
         "size": file_path.stat().st_size,
         "etag": resp.get("ETag", ""),
-        "downloadUrl": _public_download_url(cfg, cfg.bucket, key),
+        "downloadUrl": download_url,
         "obsUri": f"s3://{cfg.bucket}/{key}",
         "openclawPath": f"s3://{cfg.bucket}/{key}",
+        "eventStream": FILE_EVENT_STREAM,
+        "eventId": event_id,
     }
 
 
@@ -308,18 +400,27 @@ def cmd_download(args: argparse.Namespace) -> dict[str, Any]:
     inbox = workspace / args.inbox_dir
     inbox.mkdir(parents=True, exist_ok=True)
 
-    bucket, key = _parse_s3_source(args.source, cfg.bucket, cfg.endpoint_url)
-    s3 = _s3_client(cfg)
-    obj = s3.get_object(Bucket=bucket, Key=key)
-    body = obj["Body"].read()
+    source = args.source.strip()
+    parsed = urlparse(source)
+    key = ""
+    remote_name_hint = ""
+    if parsed.scheme in {"http", "https"}:
+        body, content_disposition = _download_from_http(source)
+        remote_name_hint = _filename_from_content_disposition(content_disposition) or Path(parsed.path).name
+    else:
+        bucket, key = _parse_s3_source(source, cfg.bucket, cfg.endpoint_url)
+        s3 = _s3_client(cfg)
+        obj = s3.get_object(Bucket=bucket, Key=key)
+        body = obj["Body"].read()
+        remote_name_hint = Path(key).name
 
     user = _safe_slug(args.user_id, "unknown-user")
     session = _safe_slug(args.session_id, "default-session")
-    base_name = _safe_slug(args.target_name or Path(key).name, "downloaded-file")
+    base_name = _safe_slug(args.target_name or remote_name_hint, "downloaded-file")
     temp_path = inbox / f"{base_name}.tmp"
     temp_path.write_bytes(body)
 
-    detected_ext = detect_extension(temp_path, original_name=Path(key).name)
+    detected_ext = detect_extension(temp_path, original_name=remote_name_hint)
     final_name = base_name if base_name.lower().endswith(detected_ext) else f"{base_name}{detected_ext}"
     final_dir = inbox / user / session
     final_dir.mkdir(parents=True, exist_ok=True)
@@ -345,6 +446,9 @@ def _build_parser() -> argparse.ArgumentParser:
     up.add_argument("--file", required=True, help="Local file absolute path under workspace")
     up.add_argument("--user-id", required=True, help="User id")
     up.add_argument("--session-id", required=True, help="Session id")
+    up.add_argument("--session-key", default="", help="Gateway session key; defaults to --session-id")
+    up.add_argument("--task-id", default="", help="Optional task id")
+    up.add_argument("--gateway-id", default="default", help="Gateway id for event routing")
 
     down = sub.add_parser("download", help="Download OBS file to workspace")
     down.add_argument("--workspace", required=True, help="Workspace root path")

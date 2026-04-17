@@ -101,12 +101,10 @@ export function buildUploadInjection(refs: UploadedFileRef[]): string {
   const lines: string[] = [];
   lines.push('<clawwork_uploaded_files>');
   for (const ref of refs) {
-    const openclawPath = ref.openclawPath ?? (ref.objectKey ? `obs://${ref.objectKey}` : undefined) ?? ref.url ?? '';
     lines.push(`- file: ${ref.fileName}`);
-    lines.push(`  openclaw_path: ${openclawPath}`);
-    if (ref.url) lines.push(`  url: ${ref.url}`);
+    if (ref.url) lines.push(`  download_url: ${ref.url}`);
   }
-  lines.push('Use the uploaded files by their openclaw_path values when needed.');
+  lines.push('Use the uploaded files by their download_url values when needed.');
   lines.push('</clawwork_uploaded_files>');
   return lines.join('\n');
 }

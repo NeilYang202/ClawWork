@@ -17,6 +17,7 @@ def _to_admin_user_out(row: User) -> AdminUserOut:
         displayName=row.display_name,
         isAdmin=row.is_admin,
         isActive=row.is_active,
+        roles=row.roles or [],
     )
 
 
@@ -36,6 +37,12 @@ async def create_user(db: AsyncSession, payload: AdminCreateUserIn) -> AdminUser
     if exists is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='user already exists')
 
+    roles = set(payload.roles or [])
+    if payload.isAdmin:
+        roles.add('admin')
+    else:
+        roles.discard('admin')
+
     now = datetime.now(timezone.utc)
     row = User(
         username=username,
@@ -43,7 +50,7 @@ async def create_user(db: AsyncSession, payload: AdminCreateUserIn) -> AdminUser
         email=payload.email,
         display_name=payload.displayName,
         is_admin=payload.isAdmin,
-        roles=['admin'] if payload.isAdmin else [],
+        roles=list(roles),
         is_active=True,
         created_at=now,
         updated_at=now,
@@ -59,6 +66,7 @@ async def update_user(db: AsyncSession, user_id: str, payload: AdminUpdateUserIn
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='user not found')
 
+    roles = set(row.roles or [])
     if payload.password is not None:
         if len(payload.password) < 6:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='password too short')
@@ -69,12 +77,17 @@ async def update_user(db: AsyncSession, user_id: str, payload: AdminUpdateUserIn
         row.display_name = payload.displayName
     if payload.isAdmin is not None:
         row.is_admin = payload.isAdmin
-        roles = set(row.roles or [])
         if payload.isAdmin:
             roles.add('admin')
         else:
             roles.discard('admin')
-        row.roles = list(roles)
+    if payload.roles is not None:
+        roles = set(payload.roles)
+    if row.is_admin:
+        roles.add('admin')
+    else:
+        roles.discard('admin')
+    row.roles = list(roles)
     if payload.isActive is not None:
         row.is_active = payload.isActive
     row.updated_at = datetime.now(timezone.utc)

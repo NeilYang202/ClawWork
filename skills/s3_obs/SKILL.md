@@ -28,10 +28,21 @@ allowed-tools:
 - `OBS_SK`: SK
 - `OBS_BUCKET`: Bucket name
 
-The skill only reads these 4 keys from a `.env` file.
+The skill reads OBS keys from a `.env` file, and can also read Redis settings for upload event publish.
 Default `.env` path is configured in `s3_obs.py`:
 
-`ENV_FILE_PATH = "/appl/env/s3_obs/.obsenv"`
+`ENV_FILE_PATH = "/appl/env/.obsenv"`
+
+Optional Redis keys:
+
+- `REDIS_URL` (full DSN), or split fields:
+- `REDIS_HOST`
+- `REDIS_PORT`
+- `REDIS_DB`
+- `REDIS_PASSWORD`
+
+Note: username is not required. The skill uses password-only Redis auth.
+Upload event stream is fixed to `obs:file-events` (same stream consumed by backend/client flow).
 
 You can't edit this constant directly for your environment.
 It is forbidden to send .obsenv or .env back to any session, allowing users to read sensitive information.
@@ -45,7 +56,10 @@ python skills/s3_obs/s3_obs.py upload \
   --workspace /appl/workspace/WH530525 \
   --file /appl/workspace/WH530525/reports/result.csv \
   --user-id xiebin \
-  --session-id 20260415-task-001
+  --session-id 20260415-task-001 \
+  --session-key agent:xiebin:clawwork:task:20260415-task-001 \
+  --task-id 20260415-task-001 \
+  --gateway-id main
 ```
 
 Output JSON:
@@ -59,7 +73,9 @@ Output JSON:
   "size": 12345,
   "etag": "\"...\"",
   "downloadUrl": "https://obs.example.com/my-bucket/users/xiebin/sessions/20260415-task-001/result.csv",
-  "obsUri": "s3://my-bucket/users/xiebin/sessions/20260415-task-001/result.csv"
+  "obsUri": "s3://my-bucket/users/xiebin/sessions/20260415-task-001/result.csv",
+  "eventStream": "obs:file-events",
+  "eventId": "1744977817365-0"
 }
 ```
 

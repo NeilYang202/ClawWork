@@ -15,9 +15,7 @@ export default function SystemSection() {
   const [quickLaunchShortcut, setQuickLaunchShortcut] = useState('Alt+Space');
   const [recordingShortcut, setRecordingShortcut] = useState(false);
   const [workspacePath, setWorkspacePath] = useState('');
-  const [exportPath, setExportPath] = useState('');
   const [changingWorkspace, setChangingWorkspace] = useState(false);
-  const [changingExportPath, setChangingExportPath] = useState(false);
 
   useEffect(() => {
     window.clawwork
@@ -36,7 +34,6 @@ export default function SystemSection() {
       .then((settings) => {
         if (settings) {
           setWorkspacePath(settings.workspacePath || t('common.notConfigured'));
-          setExportPath(settings.exportPath || t('common.notConfigured'));
         }
       })
       .catch((err) => console.error('[SystemSection] getSettings failed:', err));
@@ -81,20 +78,6 @@ export default function SystemSection() {
       toast.error(t('settings.workspaceChangeFailed', { error: result.error }));
     }
   }, [workspacePath, t]);
-
-  const handleChangeExportPath = useCallback(async () => {
-    const selected = await window.clawwork.browseWorkspace();
-    if (!selected || selected === exportPath) return;
-    setChangingExportPath(true);
-    const result = await window.clawwork.updateSettings({ exportPath: selected });
-    setChangingExportPath(false);
-    if (result.ok) {
-      setExportPath(selected);
-      toast.success(t('settings.exportDirUpdated'));
-    } else {
-      toast.error(t('settings.exportDirUpdateFailed', { error: 'unknown' }));
-    }
-  }, [exportPath, t]);
 
   const handleShortcutRecord = useCallback(
     (e: React.KeyboardEvent) => {
@@ -241,35 +224,6 @@ export default function SystemSection() {
               className="titlebar-no-drag h-9 gap-1.5 flex-shrink-0"
             >
               {changingWorkspace ? <Loader2 size={14} className="animate-spin" /> : <FolderOpen size={14} />}
-              {t('settings.workspaceChange')}
-            </Button>
-          </div>
-        </div>
-        <div className="px-5 pb-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <FolderOpen size={14} className="text-[var(--text-muted)] flex-shrink-0" />
-            <div>
-              <span className="type-label text-[var(--text-primary)]">{t('settings.exportDir')}</span>
-              <p className="type-support mt-0.5 text-[var(--text-muted)]">{t('settings.exportDirHint')}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div
-              className={cn(
-                'flex-1 min-w-0 px-3 py-2 rounded-md',
-                'bg-[var(--bg-tertiary)] border border-[var(--border)]',
-                'type-mono-data text-[var(--text-primary)] break-all',
-              )}
-            >
-              {exportPath}
-            </div>
-            <Button
-              variant="outline"
-              onClick={handleChangeExportPath}
-              disabled={changingExportPath}
-              className="titlebar-no-drag h-9 gap-1.5 flex-shrink-0"
-            >
-              {changingExportPath ? <Loader2 size={14} className="animate-spin" /> : <FolderOpen size={14} />}
               {t('settings.workspaceChange')}
             </Button>
           </div>

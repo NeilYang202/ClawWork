@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     bootstrap_admin_password: str = 'admin123456'
     bootstrap_admin_email: str = 'admin@example.com'
     bootstrap_admin_display_name: str = 'Admin'
+    workspace_root: str = '/appl/workspace'
+    workspace_sync_enabled: bool = True
+    workspace_scan_interval_seconds: int = 8
+    workspace_upload_max_bytes: int = 52428800
+    obs_record_retention_days: int = 90
+    obs_record_cleanup_interval_seconds: int = 3600
 
     @property
     def redis_dsn(self) -> str | None:

@@ -14,7 +14,7 @@ from app.schemas.config import (
     RuntimeClientConfig,
     SsoConfig,
 )
-from app.services.cache import cache_delete_prefix, cache_get_json, cache_set_json
+from app.services.workspace_sync import normalize_workspace_path
 
 
 async def _ensure_app_config(db: AsyncSession) -> AppConfig:
@@ -29,15 +29,8 @@ async def _ensure_app_config(db: AsyncSession) -> AppConfig:
 
 
 async def get_public_config(db: AsyncSession) -> PublicClientConfig:
-    cache_key = 'cfg:public'
-    cached = await cache_get_json(cache_key)
-    if cached:
-        return PublicClientConfig.model_validate(cached)
-
     row = await _ensure_app_config(db)
-    result = PublicClientConfig(ssoEnabled=row.sso_enabled, ssoProvider=row.sso_provider)
-    await cache_set_json(cache_key, result.model_dump(mode='json'), ttl_seconds=15)
-    return result
+    return PublicClientConfig(ssoEnabled=row.sso_enabled, ssoProvider=row.sso_provider)
 
 
 async def get_runtime_config(db: AsyncSession) -> RuntimeClientConfig:
@@ -54,6 +47,7 @@ async def get_runtime_config(db: AsyncSession) -> RuntimeClientConfig:
                     'username': b.username.lower(),
                     'gatewayId': b.gateway_id,
                     'agentId': b.agent_id,
+                    'workspacePath': b.workspace_path,
                 }
                 for b in bindings
             ],
@@ -86,6 +80,7 @@ async def get_admin_config(db: AsyncSession) -> AdminConfig:
                     'username': b.username.lower(),
                     'gatewayId': b.gateway_id,
                     'agentId': b.agent_id,
+                    'workspacePath': b.workspace_path,
                 }
                 for b in bindings
             ],
@@ -120,10 +115,24 @@ async def update_admin_config(db: AsyncSession, payload: AdminConfig) -> AdminCo
         )
 
     binding_count_by_user: dict[str, int] = {}
+    normalized_workspace_by_user: dict[str, str] = {}
     for item in payload.accessControl.bindings:
         username = item.username.strip().lower()
         if not username:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='binding username required')
+        workspace_path = (item.workspacePath or '').strip()
+        if not workspace_path:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f'workspacePath required for user binding: {username}',
+            )
+        normalized_workspace = normalize_workspace_path(workspace_path)
+        if normalized_workspace is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f'invalid workspacePath for user binding: {username}',
+            )
+        normalized_workspace_by_user[username] = str(normalized_workspace)
         binding_count_by_user[username] = binding_count_by_user.get(username, 0) + 1
     conflict_users = [username for username, count in binding_count_by_user.items() if count > 1]
     if conflict_users:
@@ -139,9 +148,9 @@ async def update_admin_config(db: AsyncSession, payload: AdminConfig) -> AdminCo
                 username=item.username.strip().lower(),
                 gateway_id=item.gatewayId,
                 agent_id=item.agentId,
+                workspace_path=normalized_workspace_by_user[item.username.strip().lower()],
             )
         )
 
     await db.commit()
-    await cache_delete_prefix('cfg:')
     return await get_admin_config(db)

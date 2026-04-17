@@ -30,3 +30,17 @@ def decode_access_token(token: str) -> str | None:
         return None
     sub = payload.get('sub')
     return sub if isinstance(sub, str) else None
+
+
+def create_signed_payload_token(payload: dict, expires_seconds: int = 600) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(seconds=expires_seconds)
+    body = {**payload, 'exp': expire}
+    return jwt.encode(body, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+
+
+def decode_signed_payload_token(token: str) -> dict | None:
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+    except JWTError:
+        return None
+    return payload if isinstance(payload, dict) else None

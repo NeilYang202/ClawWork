@@ -13,6 +13,7 @@ import MarkdownContent from './MarkdownContent';
 
 interface FilePreviewProps {
   artifact: Artifact;
+  canNavigateToSource?: boolean;
   onNavigateToTask: (taskId: string, messageId: string) => void;
 }
 
@@ -84,7 +85,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-export default function FilePreview({ artifact, onNavigateToTask }: FilePreviewProps) {
+export default function FilePreview({ artifact, canNavigateToSource = true, onNavigateToTask }: FilePreviewProps) {
   const { t } = useTranslation();
   const [content, setContent] = useState<string | null>(null);
   const [encoding, setEncoding] = useState<'utf-8' | 'base64'>('utf-8');
@@ -139,17 +140,19 @@ export default function FilePreview({ artifact, onNavigateToTask }: FilePreviewP
         )}
       </ScrollArea>
 
-      <div className="flex-shrink-0 border-t border-[var(--border)] px-4 py-2.5">
-        <Button
-          variant="soft"
-          size="sm"
-          onClick={() => onNavigateToTask(artifact.taskId, artifact.messageId)}
-          className="w-full gap-2"
-        >
-          <ExternalLink size={14} />
-          {t('filePreview.goToSource')}
-        </Button>
-      </div>
+      {canNavigateToSource && (
+        <div className="flex-shrink-0 border-t border-[var(--border)] px-4 py-2.5">
+          <Button
+            variant="soft"
+            size="sm"
+            onClick={() => onNavigateToTask(artifact.taskId, artifact.messageId)}
+            className="w-full gap-2"
+          >
+            <ExternalLink size={14} />
+            {t('filePreview.goToSource')}
+          </Button>
+        </div>
+      )}
     </motion.div>
   );
 }

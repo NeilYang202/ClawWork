@@ -15,6 +15,7 @@ interface AuthSessionState {
     displayName?: string;
     provider?: string;
     isAdmin?: boolean;
+    roles?: string[];
   };
   expiresAt?: string;
   authEnabled: boolean;
@@ -80,6 +81,7 @@ export function getAuthStatus(): AuthSessionState {
           displayName: session.displayName,
           provider: session.provider,
           isAdmin: session.isAdmin,
+          roles: session.roles,
         }
       : undefined,
     expiresAt: session?.expiresAt,

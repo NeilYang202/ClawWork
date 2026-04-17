@@ -24,7 +24,11 @@ interface AdminUserRow {
   displayName?: string;
   isAdmin: boolean;
   isActive: boolean;
+  roles?: string[];
 }
+
+const ROLE_COMMAND_PANEL = 'feature:command-panel';
+const ROLE_TOOLS_PANEL = 'feature:tools-panel';
 
 const inputClass = cn(
   'h-[var(--density-control-height-lg)] rounded-md border border-[var(--border)] bg-[var(--bg-tertiary)] px-3',
@@ -43,13 +47,17 @@ export default function UserManagementSection() {
   const [newEmail, setNewEmail] = useState('');
   const [newDisplayName, setNewDisplayName] = useState('');
   const [newUserIsAdmin, setNewUserIsAdmin] = useState(false);
+  const [newUserAllowCommandPanel, setNewUserAllowCommandPanel] = useState(false);
+  const [newUserAllowToolsPanel, setNewUserAllowToolsPanel] = useState(false);
 
   const isDirty =
     newUsername.trim().length > 0 ||
     newPassword.trim().length > 0 ||
     newEmail.trim().length > 0 ||
     newDisplayName.trim().length > 0 ||
-    newUserIsAdmin;
+    newUserIsAdmin ||
+    !newUserAllowCommandPanel ||
+    !newUserAllowToolsPanel;
   const { confirmOpen, guardedOpenChange, contentProps, confirmDiscard, cancelDiscard } = useDialogGuard({
     isDirty: () => isDirty,
     onConfirmClose: () => setAddOpen(false),
@@ -92,6 +100,10 @@ export default function UserManagementSection() {
       email: newEmail.trim() || undefined,
       displayName: newDisplayName.trim() || undefined,
       isAdmin: newUserIsAdmin,
+      roles: [
+        ...(newUserAllowCommandPanel ? [ROLE_COMMAND_PANEL] : []),
+        ...(newUserAllowToolsPanel ? [ROLE_TOOLS_PANEL] : []),
+      ],
     });
     if (!res.ok || !res.result) {
       toast.error(res.error ?? t('settings.adminSaveFailed'));
@@ -103,9 +115,20 @@ export default function UserManagementSection() {
     setNewEmail('');
     setNewDisplayName('');
     setNewUserIsAdmin(false);
+    setNewUserAllowCommandPanel(false);
+    setNewUserAllowToolsPanel(false);
     setAddOpen(false);
     toast.success(t('common.add'));
-  }, [newUsername, newPassword, newEmail, newDisplayName, newUserIsAdmin, t]);
+  }, [
+    newUsername,
+    newPassword,
+    newEmail,
+    newDisplayName,
+    newUserIsAdmin,
+    newUserAllowCommandPanel,
+    newUserAllowToolsPanel,
+    t,
+  ]);
 
   const resetUserPassword = useCallback(
     async (user: AdminUserRow) => {
@@ -150,6 +173,25 @@ export default function UserManagementSection() {
       }
       setUsers((prev) => prev.filter((item) => item.id !== user.id));
       toast.success(t('common.remove'));
+    },
+    [t],
+  );
+
+  const hasRole = useCallback((user: AdminUserRow, role: string) => (user.roles ?? []).includes(role), []);
+
+  const toggleUserPermission = useCallback(
+    async (user: AdminUserRow, role: string, enabled: boolean) => {
+      const prev = new Set(user.roles ?? []);
+      if (enabled) prev.add(role);
+      else prev.delete(role);
+      const res = await window.clawwork.updateAdminUser({ userId: user.id, roles: [...prev] });
+      if (!res.ok || !res.result) {
+        toast.error(res.error ?? t('settings.adminSaveFailed'));
+        return;
+      }
+      const updated = res.result as AdminUserRow;
+      setUsers((all) => all.map((item) => (item.id === updated.id ? updated : item)));
+      toast.success(t('settings.adminSaved'));
     },
     [t],
   );
@@ -211,6 +253,24 @@ export default function UserManagementSection() {
                     {t('common.remove')}
                   </Button>
                 </div>
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                  <label className="type-label flex items-center gap-2 text-[var(--text-primary)]">
+                    <input
+                      type="checkbox"
+                      checked={hasRole(u, ROLE_COMMAND_PANEL)}
+                      onChange={(e) => void toggleUserPermission(u, ROLE_COMMAND_PANEL, e.target.checked)}
+                    />
+                    {t('settings.commandPanelPermission')}
+                  </label>
+                  <label className="type-label flex items-center gap-2 text-[var(--text-primary)]">
+                    <input
+                      type="checkbox"
+                      checked={hasRole(u, ROLE_TOOLS_PANEL)}
+                      onChange={(e) => void toggleUserPermission(u, ROLE_TOOLS_PANEL, e.target.checked)}
+                    />
+                    {t('settings.toolsPanelPermission')}
+                  </label>
+                </div>
               </div>
             ))}
           </div>
@@ -252,6 +312,22 @@ export default function UserManagementSection() {
             <label className="type-label flex items-center gap-2 text-[var(--text-primary)]">
               <input type="checkbox" checked={newUserIsAdmin} onChange={(e) => setNewUserIsAdmin(e.target.checked)} />
               {t('settings.admin')}
+            </label>
+            <label className="type-label flex items-center gap-2 text-[var(--text-primary)]">
+              <input
+                type="checkbox"
+                checked={newUserAllowCommandPanel}
+                onChange={(e) => setNewUserAllowCommandPanel(e.target.checked)}
+              />
+              {t('settings.commandPanelPermission')}
+            </label>
+            <label className="type-label flex items-center gap-2 text-[var(--text-primary)]">
+              <input
+                type="checkbox"
+                checked={newUserAllowToolsPanel}
+                onChange={(e) => setNewUserAllowToolsPanel(e.target.checked)}
+              />
+              {t('settings.toolsPanelPermission')}
             </label>
           </div>
           <DialogFooter>

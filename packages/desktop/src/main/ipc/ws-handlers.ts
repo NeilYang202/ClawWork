@@ -113,7 +113,6 @@ interface AgentCatalogPayload {
 function resolveAllowedAgents(gatewayId: string): Set<string> | null {
   const auth = getAuthStatus();
   if (!auth.authEnabled) return null;
-  if (isCurrentUserAdmin()) return null;
   const ac = getCachedRuntimeAccessControl();
   if (!ac || ac.enabled === false) return new Set();
   const user = getCurrentUserName();
@@ -194,7 +193,6 @@ function filterSessionsByAgent(gatewayId: string, sessions: GatewaySessionRow[])
 function canAccessTaskId(taskId: string | null): boolean {
   const auth = getAuthStatus();
   if (!auth.authEnabled) return true;
-  if (isCurrentUserAdmin()) return true;
   if (!auth.authenticated) return false;
   const user = getCurrentUserName();
   if (!user || !taskId || !isDbReady()) return false;
@@ -210,7 +208,6 @@ function canAccessSessionKey(sessionKey: string): boolean {
 
   const auth = getAuthStatus();
   if (!auth.authEnabled) return true;
-  if (isCurrentUserAdmin()) return true;
   if (!auth.authenticated) return false;
   const user = getCurrentUserName();
   if (!user || !isDbReady()) return false;

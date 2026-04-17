@@ -68,7 +68,8 @@
     "thinkingMedium": "Medium",
     "thinkingMinimal": "Minimal",
     "thinkingOff": "Off",
-    "unsupportedUploadType": "{{fileName}} type is not supported"
+    "unsupportedUploadType": "{{fileName}} type is not supported",
+    "workspaceReady": "Local workspace is configured"
   },
   "chatMessage": {
     "conductor": "Coordinator",
@@ -316,7 +317,8 @@
     "searchFiles": "Search files…",
     "sortByDate": "By date",
     "sortByName": "By name",
-    "sortByType": "By type"
+    "sortByType": "By type",
+    "workspaceFiles": "Local Workspace"
   },
   "filePreview": {
     "cannotPreview": "Cannot preview this file type",
@@ -486,6 +488,7 @@
     "authMethod": "Authentication",
     "cannotDeleteMain": "The main agent cannot be deleted",
     "checkForUpdates": "Check for Updates",
+    "commandPanelPermission": "Command Panel",
     "confirmDeleteAgentDesc": "Delete agent \"{{name}}\"? Existing tasks using this agent will keep their session, but new tasks cannot target this agent.",
     "confirmDeleteAgentTitle": "Delete Agent",
     "confirmDeleteDesc": "Remove \"{{name}}\"? Active connections to this gateway will be terminated.",
@@ -651,6 +654,7 @@
     "token": "Token",
     "tokenPlaceholder": "Gateway token",
     "tokenRequired": "Token is required",
+    "toolsPanelPermission": "Tools Panel",
     "trayDisabled": "Menu bar icon disabled",
     "trayEnabled": "Menu bar icon enabled",
     "trayIcon": "Menu Bar Icon",

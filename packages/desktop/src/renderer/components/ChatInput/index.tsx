@@ -4,7 +4,6 @@ import {
   File,
   FileCode,
   FileText,
-  FolderOpen,
   ListTodo,
   Loader2,
   Mic,
@@ -15,6 +14,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
+import type { FileIndexEntry } from '@clawwork/shared';
 import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -46,7 +46,6 @@ import ToolsCatalog from '../ToolsCatalog';
 import VoiceIntroDialog from '../VoiceIntroDialog';
 import { ACCEPTED_TYPES, MENTION_ALL_AGENT_ID, THINKING_LABEL_KEYS, THINKING_LEVELS } from './constants';
 import { useChatSend } from './useChatSend';
-import { useContextFolders } from './useContextFolders';
 import { useImageAttachments } from './useImageAttachments';
 import { useMentionPicker } from './useMentionPicker';
 import { useSlashAutocomplete } from './useSlashAutocomplete';
@@ -87,6 +86,8 @@ export default function ChatInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [canSend, setCanSend] = useState(false);
+  const [allowCommandPanel, setAllowCommandPanel] = useState(true);
+  const [allowToolsPanel, setAllowToolsPanel] = useState(true);
 
   const sendShortcut = useUiStore((s) => s.sendShortcut);
   const mainView = useUiStore((s) => s.mainView);
@@ -103,8 +104,9 @@ export default function ChatInput() {
     handlePaste,
   } = useImageAttachments();
 
-  const { contextFolders, localFilesForPicker, handleAddContextFolder, handleRemoveContextFolder, loadLocalFiles } =
-    useContextFolders();
+  const contextFolders: string[] = [];
+  const localFilesForPicker: FileIndexEntry[] = [];
+  const loadLocalFiles = useCallback(async () => {}, []);
 
   const activeTaskId = useTaskStore((s) => s.activeTaskId);
   const activeTaskGatewayId = useTaskStore((s) => s.tasks.find((task) => task.id === s.activeTaskId)?.gatewayId);
@@ -181,6 +183,21 @@ export default function ChatInput() {
   });
 
   const [whisperAvailable, setWhisperAvailable] = useState(false);
+  useEffect(() => {
+    window.clawwork
+      .getAuthStatus()
+      .then((auth) => {
+        const isAdmin = auth.user?.isAdmin === true;
+        const roles = auth.user?.roles ?? [];
+        setAllowCommandPanel(isAdmin || roles.includes('feature:command-panel'));
+        setAllowToolsPanel(isAdmin || roles.includes('feature:tools-panel'));
+      })
+      .catch(() => {
+        setAllowCommandPanel(true);
+        setAllowToolsPanel(true);
+      });
+  }, []);
+
   useEffect(() => {
     if (typeof window.clawwork.checkWhisper !== 'function') {
       setWhisperAvailable(false);
@@ -883,78 +900,47 @@ export default function ChatInput() {
           </div>
         </div>
 
-        {(!isOffline || contextFolders.length > 0 || activeTask) && (
+        {(!isOffline || activeTask) && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {!isOffline && (
               <div className="flex items-center gap-1.5 px-1">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <ToolbarButton
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => setDashboardOpen(true)}
-                      icon={<TerminalSquare size={14} className="flex-shrink-0" />}
-                      className="rounded-lg text-[var(--text-secondary)]"
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent side="top">{t('slashDashboard.tooltip')}</TooltipContent>
-                </Tooltip>
+                {allowCommandPanel && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToolbarButton
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setDashboardOpen(true)}
+                        icon={<TerminalSquare size={14} className="flex-shrink-0" />}
+                        className="rounded-lg text-[var(--text-secondary)]"
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{t('slashDashboard.tooltip')}</TooltipContent>
+                  </Tooltip>
+                )}
 
-                {toolsCatalog?.groups && toolsCatalog.groups.length > 0 && (
+                {allowToolsPanel && toolsCatalog?.groups && toolsCatalog.groups.length > 0 && (
                   <ToolsCatalog groups={toolsCatalog.groups} onToolSelect={handleToolSelect} />
                 )}
               </div>
             )}
 
             <div className="ml-auto flex flex-wrap items-center gap-2">
-              {contextFolders.length > 0 && (
-                <div className="flex min-w-0 max-w-xl items-center gap-1.5 overflow-x-auto py-0.5">
-                  {contextFolders.map((folder) => (
-                    <span
-                      key={folder}
-                      className={cn(
-                        'type-mono-data inline-flex max-w-48 flex-shrink-0 items-center gap-1 rounded-full px-2 py-1',
-                        'border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
-                      )}
-                    >
-                      <span className="truncate">{folder.split('/').pop()}</span>
-                      <button
-                        onClick={() => handleRemoveContextFolder(folder)}
-                        className="flex-shrink-0 opacity-50 transition-opacity hover:opacity-100"
-                      >
-                        <X size={12} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="flex items-center gap-1.5 px-1">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <ToolbarButton
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleAddContextFolder}
-                      disabled={disabled}
-                      className="rounded-lg text-[var(--text-secondary)]"
-                    >
-                      {t('chatInput.linkLocalFolders')}
-                      <FolderOpen size={14} className="flex-shrink-0" />
-                    </ToolbarButton>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">{t('chatInput.addContextFolder')}</TooltipContent>
-                </Tooltip>
+              <div className="flex items-center gap-1.5 px-1 text-[var(--text-muted)] type-support">
+                {t('chatInput.workspaceReady')}
               </div>
             </div>
           </div>
         )}
       </div>
       <VoiceIntroDialog open={isVoiceIntroOpen} onConfirm={confirmVoiceIntro} onCancel={dismissVoiceIntro} />
-      <SlashCommandDashboard
-        open={dashboardOpen}
-        onOpenChange={setDashboardOpen}
-        onSelectCommand={commitSlashCommand}
-      />
+      {allowCommandPanel && (
+        <SlashCommandDashboard
+          open={dashboardOpen}
+          onOpenChange={setDashboardOpen}
+          onSelectCommand={commitSlashCommand}
+        />
+      )}
     </div>
   );
 }

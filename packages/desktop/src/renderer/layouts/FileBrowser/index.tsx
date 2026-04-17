@@ -13,7 +13,7 @@ import FileCard from '@/components/FileCard';
 import FilePreview from '@/components/FilePreview';
 import { TaskContextMenuPopover, type MenuItem } from '@/components/ContextMenu';
 import { useResizePanel } from '@/hooks/useResizePanel';
-import type { Artifact } from '@clawwork/shared';
+import type { Artifact, FileIndexEntry } from '@clawwork/shared';
 import type { ArtifactSearchResult } from '@/stores/fileStore';
 import EmptyState from '@/components/semantic/EmptyState';
 import ListItem from '@/components/semantic/ListItem';
@@ -51,6 +51,23 @@ function SnippetHighlight({ snippet }: { snippet: string }) {
 }
 
 type FileMenuState = { artifact: Artifact; position: { x: number; y: number } } | null;
+const WORKSPACE_TASK_ID = '__workspace__';
+
+function mapWorkspaceEntryToArtifact(entry: FileIndexEntry): Artifact {
+  const normalizedLocalPath = entry.relativePath.replace(/\\/g, '/');
+  return {
+    id: `workspace:${normalizedLocalPath}`,
+    taskId: WORKSPACE_TASK_ID,
+    messageId: 'workspace',
+    type: entry.tier === 'image' ? 'image' : 'file',
+    name: entry.fileName,
+    filePath: entry.absolutePath,
+    localPath: normalizedLocalPath,
+    mimeType: entry.mimeType,
+    size: entry.size,
+    createdAt: new Date(entry.mtime).toISOString(),
+  };
+}
 
 export default function FileBrowser() {
   const { t } = useTranslation();
@@ -101,7 +118,7 @@ export default function FileBrowser() {
   const fileMenuItems = useMemo((): MenuItem[] => {
     if (!fileMenu) return [];
     const a = fileMenu.artifact;
-    return [
+    const items: MenuItem[] = [
       {
         label: t('filePreview.openInEditor'),
         action: () => window.clawwork.openArtifactFile(a.localPath),
@@ -110,11 +127,14 @@ export default function FileBrowser() {
         label: t('filePreview.revealInFolder'),
         action: () => window.clawwork.showArtifactInFolder(a.localPath),
       },
-      {
+    ];
+    if (a.taskId !== WORKSPACE_TASK_ID && a.messageId !== 'workspace') {
+      items.push({
         label: t('filePreview.goToSourceShort'),
         action: () => handleNavigateToTask(a.taskId, a.messageId),
-      },
-    ];
+      });
+    }
+    return items;
   }, [fileMenu, t, handleNavigateToTask]);
 
   useEffect(() => {
@@ -124,17 +144,31 @@ export default function FileBrowser() {
   useEffect(() => {
     let cancelled = false;
 
-    window.clawwork
-      .listArtifacts()
-      .then((res) => {
+    Promise.all([window.clawwork.listArtifacts(), window.clawwork.getWorkspacePath()])
+      .then(async ([artifactsRes, workspacePath]) => {
         if (cancelled) return;
-        if (res.ok && res.result) {
-          setArtifacts(res.result as unknown as Artifact[]);
+        const localArtifacts =
+          artifactsRes.ok && artifactsRes.result ? (artifactsRes.result as unknown as Artifact[]) : [];
+        const merged = [...localArtifacts];
+        const byLocalPath = new Set(merged.map((item) => item.localPath.replace(/\\/g, '/')));
+
+        if (workspacePath) {
+          const filesRes = await window.clawwork.listContextFiles([workspacePath]);
+          if (filesRes.ok && filesRes.result) {
+            const workspaceEntries = filesRes.result as unknown as FileIndexEntry[];
+            for (const entry of workspaceEntries) {
+              const key = entry.relativePath.replace(/\\/g, '/');
+              if (byLocalPath.has(key)) continue;
+              merged.push(mapWorkspaceEntryToArtifact(entry));
+            }
+          }
         }
+
+        setArtifacts(merged);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        console.error('[FileBrowser] listArtifacts failed:', err);
+        console.error('[FileBrowser] list artifacts/workspace files failed:', err);
       });
 
     return () => {
@@ -177,6 +211,7 @@ export default function FileBrowser() {
   const taskMap = useMemo(() => {
     const m = new Map<string, string>();
     for (const task of tasks) m.set(task.id, task.title || t('common.newTask'));
+    m.set(WORKSPACE_TASK_ID, t('fileBrowser.workspaceFiles'));
     return m;
   }, [tasks, t]);
 
@@ -379,7 +414,13 @@ export default function FileBrowser() {
                 'transition-colors duration-150',
               )}
             />
-            <FilePreview artifact={selectedArtifact} onNavigateToTask={handleNavigateToTask} />
+            <FilePreview
+              artifact={selectedArtifact}
+              canNavigateToSource={
+                selectedArtifact.taskId !== WORKSPACE_TASK_ID && selectedArtifact.messageId !== 'workspace'
+              }
+              onNavigateToTask={handleNavigateToTask}
+            />
           </motion.div>
         )}
       </AnimatePresence>

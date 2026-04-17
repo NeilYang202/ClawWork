@@ -31,6 +31,16 @@ CREATE TABLE IF NOT EXISTS app_config (
 );
 
 INSERT INTO app_config(id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+ALTER TABLE app_config ADD COLUMN IF NOT EXISTS sso_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE app_config ADD COLUMN IF NOT EXISTS sso_provider TEXT;
+ALTER TABLE app_config ADD COLUMN IF NOT EXISTS ad_domain TEXT;
+ALTER TABLE app_config ADD COLUMN IF NOT EXISTS obs_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE app_config ADD COLUMN IF NOT EXISTS obs_endpoint TEXT;
+ALTER TABLE app_config ADD COLUMN IF NOT EXISTS obs_bucket TEXT;
+ALTER TABLE app_config ADD COLUMN IF NOT EXISTS obs_base_path TEXT;
+ALTER TABLE app_config ADD COLUMN IF NOT EXISTS obs_access_key TEXT;
+ALTER TABLE app_config ADD COLUMN IF NOT EXISTS obs_secret_key TEXT;
+ALTER TABLE app_config ADD COLUMN IF NOT EXISTS obs_region TEXT;
 ALTER TABLE app_config ADD COLUMN IF NOT EXISTS gateways_json JSONB NOT NULL DEFAULT '[]'::jsonb;
 
 CREATE TABLE IF NOT EXISTS user_agent_bindings (
@@ -38,9 +48,11 @@ CREATE TABLE IF NOT EXISTS user_agent_bindings (
   username TEXT NOT NULL,
   gateway_id TEXT NOT NULL,
   agent_id TEXT NOT NULL,
+  workspace_path TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE(username, gateway_id, agent_id)
 );
+ALTER TABLE user_agent_bindings ADD COLUMN IF NOT EXISTS workspace_path TEXT;
 
 CREATE TABLE IF NOT EXISTS auth_device_codes (
   id BIGSERIAL PRIMARY KEY,
@@ -67,8 +79,14 @@ CREATE TABLE IF NOT EXISTS obs_upload_records (
   object_key TEXT NOT NULL,
   file_url TEXT,
   openclaw_path TEXT NOT NULL,
+  content_sha256 TEXT,
+  source_kind TEXT NOT NULL DEFAULT 'unknown',
+  source_path TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE obs_upload_records ADD COLUMN IF NOT EXISTS content_sha256 TEXT;
+ALTER TABLE obs_upload_records ADD COLUMN IF NOT EXISTS source_kind TEXT NOT NULL DEFAULT 'unknown';
+ALTER TABLE obs_upload_records ADD COLUMN IF NOT EXISTS source_path TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_uab_username ON user_agent_bindings(username);
 DO $$
@@ -85,3 +103,5 @@ BEGIN
 END $$;
 CREATE INDEX IF NOT EXISTS idx_obs_records_session ON obs_upload_records(session_key);
 CREATE INDEX IF NOT EXISTS idx_obs_records_user_session ON obs_upload_records(username, session_key);
+CREATE INDEX IF NOT EXISTS idx_obs_records_created_at ON obs_upload_records(created_at);
+CREATE INDEX IF NOT EXISTS idx_obs_records_source_dedup ON obs_upload_records(username, source_kind, source_path, content_sha256);

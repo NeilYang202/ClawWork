@@ -38,3 +38,21 @@ class ObsUploadRecordOut(BaseModel):
     url: str | None = None
     openclawPath: str
     createdAt: str
+
+
+class ObsFileEventOut(BaseModel):
+    eventId: str
+    taskId: str | None = None
+    sessionKey: str
+    gatewayId: str
+    fileName: str
+    mimeType: str | None = None
+    byteSize: int
+    objectKey: str
+    url: str
+    createdAt: str
+
+
+class ObsFileEventListOut(BaseModel):
+    cursor: str
+    items: list[ObsFileEventOut]

@@ -1,5 +1,5 @@
-import { copyFileSync, mkdirSync, statSync, writeFileSync, readFileSync } from 'fs';
-import { basename, extname, join, resolve, sep } from 'path';
+import { copyFileSync, statSync, writeFileSync, readFileSync } from 'fs';
+import { basename, extname, resolve, sep } from 'path';
 import { randomUUID } from 'crypto';
 import type { Artifact } from '@clawwork/shared';
 import { getDb } from '../db/index.js';
@@ -60,17 +60,6 @@ function uniqueFileName(_dir: string, name: string): string {
   return `${base}-${randomUUID().slice(0, 8)}${ext}`;
 }
 
-function mirrorToExportPath(taskId: string, finalName: string, sourcePath: string): void {
-  const exportPath = readConfig()?.exportPath?.trim();
-  if (!exportPath) return;
-  const base = resolve(exportPath);
-  const taskExportDir = resolve(base, taskId);
-  if (!taskExportDir.startsWith(base + sep) && taskExportDir !== base) return;
-  mkdirSync(taskExportDir, { recursive: true });
-  const target = join(taskExportDir, finalName);
-  copyFileSync(sourcePath, target);
-}
-
 interface SaveArtifactParams {
   workspacePath: string;
   taskId: string;
@@ -116,7 +105,6 @@ export async function saveArtifact(params: SaveArtifactParams): Promise<Artifact
   const { finalName, destPath } = resolveArtifactDestination(taskDir, originalName);
 
   copyFileSync(sourcePath, destPath);
-  mirrorToExportPath(taskId, finalName, destPath);
 
   const stat = statSync(destPath);
   const localPath = `${taskId}/${finalName}`;
@@ -166,20 +154,22 @@ interface SaveArtifactFromBufferParams {
   buffer: Buffer;
   artifactType: 'code' | 'image' | 'file';
   contentText?: string;
+  skipObsUpload?: boolean;
 }
 
 export async function saveArtifactFromBuffer(params: SaveArtifactFromBufferParams): Promise<Artifact> {
-  const { workspacePath, taskId, messageId, fileName, buffer, artifactType, contentText } = params;
+  const { workspacePath, taskId, messageId, fileName, buffer, artifactType, contentText, skipObsUpload } = params;
 
   const taskDir = ensureTaskDir(workspacePath, taskId);
   const { finalName, destPath } = resolveArtifactDestination(taskDir, fileName);
 
   writeFileSync(destPath, buffer);
-  mirrorToExportPath(taskId, finalName, destPath);
 
   const localPath = `${taskId}/${finalName}`;
   const mimeType = detectMimeType(finalName);
-  await uploadArtifactToObs(taskId, finalName, mimeType, buffer);
+  if (!skipObsUpload) {
+    await uploadArtifactToObs(taskId, finalName, mimeType, buffer);
+  }
   const now = new Date().toISOString();
   const id = randomUUID();
 

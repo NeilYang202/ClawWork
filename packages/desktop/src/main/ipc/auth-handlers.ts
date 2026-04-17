@@ -14,6 +14,7 @@ import {
 import { clearAuthSession, getAuthConfig, getAuthSession, getAuthStatus, setAuthSession } from '../auth/session.js';
 import { refreshPublicClientConfig, refreshRuntimeClientConfig } from '../auth/runtime-config.js';
 import { syncManagedGatewaysFromRuntimeConfig } from '../auth/runtime-gateway-sync.js';
+import { startObsFileSync, stopObsFileSync } from '../obs/file-sync.js';
 
 export function registerAuthHandlers(): void {
   ipcMain.handle('auth:status', async () => {
@@ -22,6 +23,9 @@ export function registerAuthHandlers(): void {
     if (token) {
       await refreshRuntimeClientConfig(token);
       syncManagedGatewaysFromRuntimeConfig();
+      startObsFileSync();
+    } else {
+      stopObsFileSync();
     }
     return getAuthStatus();
   });
@@ -47,6 +51,7 @@ export function registerAuthHandlers(): void {
       setAuthSession(session);
       await refreshRuntimeClientConfig(session.token ?? '');
       syncManagedGatewaysFromRuntimeConfig();
+      startObsFileSync();
       return { ok: true, result: getAuthStatus() };
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : 'login failed' };
@@ -74,6 +79,7 @@ export function registerAuthHandlers(): void {
         setAuthSession(result.session);
         await refreshRuntimeClientConfig(result.session.token ?? '');
         syncManagedGatewaysFromRuntimeConfig();
+        startObsFileSync();
       }
       return { ok: true, result: { done: result.done, status: result.done ? getAuthStatus() : undefined } };
     } catch (err) {
@@ -83,6 +89,7 @@ export function registerAuthHandlers(): void {
 
   ipcMain.handle('auth:logout', () => {
     clearAuthSession();
+    stopObsFileSync();
     return { ok: true, result: getAuthStatus() };
   });
 
@@ -141,7 +148,14 @@ export function registerAuthHandlers(): void {
     'auth:admin-users-create',
     async (
       _event,
-      payload: { username: string; password: string; email?: string; displayName?: string; isAdmin?: boolean },
+      payload: {
+        username: string;
+        password: string;
+        email?: string;
+        displayName?: string;
+        isAdmin?: boolean;
+        roles?: string[];
+      },
     ) => {
       const auth = getAuthConfig();
       const token = getAuthSession()?.token;
@@ -180,6 +194,7 @@ export function registerAuthHandlers(): void {
         displayName?: string;
         isAdmin?: boolean;
         isActive?: boolean;
+        roles?: string[];
       },
     ) => {
       const auth = getAuthConfig();

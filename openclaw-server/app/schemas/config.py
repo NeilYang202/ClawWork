@@ -5,6 +5,7 @@ class BindingItem(BaseModel):
     username: str
     gatewayId: str
     agentId: str
+    workspacePath: str | None = None
 
 
 class ObsConfig(BaseModel):

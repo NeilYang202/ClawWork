@@ -51,6 +51,7 @@ export interface AuthSessionConfig {
   displayName?: string;
   provider?: string;
   isAdmin?: boolean;
+  roles?: string[];
 }
 
 export interface ObsUploadConfig {

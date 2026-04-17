@@ -5,6 +5,7 @@ out/
 *.sqlite
 .env
 .env.local
+.redisenv
 .DS_Store
 *.log
 

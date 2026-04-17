@@ -18,10 +18,13 @@ import ConfirmDialog from '@/components/semantic/ConfirmDialog';
 import { useDialogGuard } from '@/hooks/useDialogGuard';
 import { cn } from '@/lib/utils';
 
+type AgentOption = AgentInfo & { workspace?: string };
+
 interface BindingRow {
   username: string;
   gatewayId: string;
   agentId: string;
+  workspacePath?: string;
 }
 
 interface AdminUserRow {
@@ -56,18 +59,30 @@ export default function AgentBindingSection() {
   const [rawConfig, setRawConfig] = useState<AdminConfigPayload | null>(null);
   const [bindings, setBindings] = useState<BindingRow[]>([]);
   const [users, setUsers] = useState<AdminUserRow[]>([]);
-  const [agentsByGateway, setAgentsByGateway] = useState<Record<string, AgentInfo[]>>({});
+  const [agentsByGateway, setAgentsByGateway] = useState<Record<string, AgentOption[]>>({});
   const [query, setQuery] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [draftUser, setDraftUser] = useState('');
   const [draftGateway, setDraftGateway] = useState('');
   const [draftAgent, setDraftAgent] = useState('');
+  const [draftWorkspacePath, setDraftWorkspacePath] = useState('');
 
-  const isDirty = draftUser.length > 0 || draftGateway.length > 0 || draftAgent.length > 0;
+  const isDirty =
+    draftUser.length > 0 || draftGateway.length > 0 || draftAgent.length > 0 || draftWorkspacePath.length > 0;
   const { confirmOpen, guardedOpenChange, contentProps, confirmDiscard, cancelDiscard } = useDialogGuard({
     isDirty: () => isDirty,
     onConfirmClose: () => setAddOpen(false),
   });
+
+  const resolveAgentWorkspace = useCallback(
+    (gatewayId: string, agentId: string): string | undefined => {
+      const agents = agentsByGateway[gatewayId] ?? [];
+      const matched = agents.find((agent) => agent.id === agentId);
+      const path = matched?.workspace?.trim();
+      return path ? path : undefined;
+    },
+    [agentsByGateway],
+  );
 
   const load = useCallback(async () => {
     const authStatus = await window.clawwork.getAuthStatus();
@@ -80,18 +95,23 @@ export default function AgentBindingSection() {
       setRawConfig(cfg);
       setBindings(cfg.accessControl?.bindings ?? []);
       const gateways = cfg.gateways ?? [];
-      const nextAgentsByGateway: Record<string, AgentInfo[]> = {};
+      const nextAgentsByGateway: Record<string, AgentOption[]> = {};
       for (const gateway of gateways) {
         const res = await window.clawwork.listAgents(gateway.id);
         if (res.ok && res.result) {
-          const data = res.result as { agents?: AgentInfo[] };
-          nextAgentsByGateway[gateway.id] = data.agents ?? [];
+          const data = res.result as { agents?: Array<AgentInfo & { workspace?: string }> };
+          nextAgentsByGateway[gateway.id] = (data.agents ?? []).map((agent) => ({
+            ...agent,
+            workspace: typeof agent.workspace === 'string' ? agent.workspace : undefined,
+          }));
         }
       }
       setAgentsByGateway(nextAgentsByGateway);
       if (gateways[0]) {
         setDraftGateway(gateways[0].id);
-        setDraftAgent(nextAgentsByGateway[gateways[0].id]?.[0]?.id ?? '');
+        const firstAgent = nextAgentsByGateway[gateways[0].id]?.[0];
+        setDraftAgent(firstAgent?.id ?? '');
+        setDraftWorkspacePath(firstAgent?.workspace ?? '');
       }
     }
     if (usersRes.ok && usersRes.result) {
@@ -108,13 +128,23 @@ export default function AgentBindingSection() {
     const q = query.trim().toLowerCase();
     if (!q) return bindings;
     return bindings.filter((binding) =>
-      `${binding.username} ${binding.gatewayId} ${binding.agentId}`.toLowerCase().includes(q),
+      `${binding.username} ${binding.gatewayId} ${binding.agentId} ${binding.workspacePath ?? ''}`
+        .toLowerCase()
+        .includes(q),
     );
   }, [bindings, query]);
 
   const save = useCallback(async () => {
     if (!rawConfig) return;
-    const sanitizedBindings = bindings.filter((binding) => binding.username && binding.gatewayId && binding.agentId);
+    const sanitizedBindings = bindings
+      .filter((binding) => binding.username && binding.gatewayId && binding.agentId)
+      .map((binding) => ({
+        ...binding,
+        workspacePath:
+          (binding.workspacePath ?? '').trim() ||
+          resolveAgentWorkspace(binding.gatewayId, binding.agentId) ||
+          undefined,
+      }));
     const res = await window.clawwork.updateAdminConfig({
       ...rawConfig,
       accessControl: { ...rawConfig.accessControl, bindings: sanitizedBindings },
@@ -127,16 +157,25 @@ export default function AgentBindingSection() {
     setRawConfig(next);
     setBindings(next.accessControl?.bindings ?? []);
     toast.success(t('settings.adminSaved'));
-  }, [rawConfig, bindings, t]);
+  }, [rawConfig, bindings, resolveAgentWorkspace, t]);
 
   const addBinding = useCallback(() => {
     if (!draftUser || !draftGateway || !draftAgent) {
       toast.error(t('settings.adminSaveFailed'));
       return;
     }
-    setBindings((prev) => [...prev, { username: draftUser, gatewayId: draftGateway, agentId: draftAgent }]);
+    setBindings((prev) => [
+      ...prev,
+      {
+        username: draftUser,
+        gatewayId: draftGateway,
+        agentId: draftAgent,
+        workspacePath: draftWorkspacePath.trim() || undefined,
+      },
+    ]);
+    setDraftWorkspacePath('');
     setAddOpen(false);
-  }, [draftUser, draftGateway, draftAgent, t]);
+  }, [draftUser, draftGateway, draftAgent, draftWorkspacePath, t]);
 
   if (!isAdmin) {
     return (
@@ -168,11 +207,12 @@ export default function AgentBindingSection() {
             {filtered.map((row, index) => (
               <div
                 key={`${row.username}-${row.gatewayId}-${row.agentId}-${index}`}
-                className="grid grid-cols-1 gap-2 md:grid-cols-4"
+                className="grid grid-cols-1 gap-2 md:grid-cols-5"
               >
                 <input className={inputClass} value={row.username} readOnly />
                 <input className={inputClass} value={row.gatewayId} readOnly />
                 <input className={inputClass} value={row.agentId} readOnly />
+                <input className={inputClass} value={row.workspacePath ?? ''} readOnly />
                 <Button
                   variant="outline"
                   size="sm"
@@ -213,7 +253,9 @@ export default function AgentBindingSection() {
               onChange={(e) => {
                 const gatewayId = e.target.value;
                 setDraftGateway(gatewayId);
-                setDraftAgent(agentsByGateway[gatewayId]?.[0]?.id ?? '');
+                const firstAgent = agentsByGateway[gatewayId]?.[0];
+                setDraftAgent(firstAgent?.id ?? '');
+                setDraftWorkspacePath(firstAgent?.workspace ?? '');
               }}
             >
               {(rawConfig?.gateways ?? []).map((gateway) => (
@@ -222,13 +264,27 @@ export default function AgentBindingSection() {
                 </option>
               ))}
             </select>
-            <select className={inputClass} value={draftAgent} onChange={(e) => setDraftAgent(e.target.value)}>
+            <select
+              className={inputClass}
+              value={draftAgent}
+              onChange={(e) => {
+                const agentId = e.target.value;
+                setDraftAgent(agentId);
+                setDraftWorkspacePath(resolveAgentWorkspace(draftGateway, agentId) ?? '');
+              }}
+            >
               {(agentsByGateway[draftGateway] ?? []).map((agent) => (
                 <option key={agent.id} value={agent.id}>
                   {agent.name ?? agent.id}
                 </option>
               ))}
             </select>
+            <input
+              className={inputClass}
+              placeholder="/appl/workspace/WH530525"
+              value={draftWorkspacePath}
+              onChange={(e) => setDraftWorkspacePath(e.target.value)}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => guardedOpenChange(false)}>

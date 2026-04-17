@@ -133,6 +133,7 @@ interface AuthStatus {
     displayName?: string;
     provider?: string;
     isAdmin?: boolean;
+    roles?: string[];
   };
   expiresAt?: string;
   authEnabled: boolean;
@@ -152,6 +153,7 @@ interface AdminUser {
   displayName?: string;
   isAdmin: boolean;
   isActive: boolean;
+  roles?: string[];
 }
 
 interface AppSettings {
@@ -317,6 +319,7 @@ export interface ClawWorkAPI {
     email?: string;
     displayName?: string;
     isAdmin?: boolean;
+    roles?: string[];
   }) => Promise<IpcResult<AdminUser>>;
   updateAdminUser: (payload: {
     userId: string;
@@ -325,6 +328,7 @@ export interface ClawWorkAPI {
     displayName?: string;
     isAdmin?: boolean;
     isActive?: boolean;
+    roles?: string[];
   }) => Promise<IpcResult<AdminUser>>;
   deleteAdminUser: (userId: string) => Promise<IpcResult<{ ok: boolean }>>;
 

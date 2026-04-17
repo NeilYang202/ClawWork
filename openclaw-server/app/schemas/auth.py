@@ -69,6 +69,7 @@ class AdminCreateUserIn(BaseModel):
     email: str | None = None
     displayName: str | None = None
     isAdmin: bool = False
+    roles: list[str] = Field(default_factory=list)
 
 
 class AdminUserOut(BaseModel):
@@ -78,6 +79,7 @@ class AdminUserOut(BaseModel):
     displayName: str | None = None
     isAdmin: bool
     isActive: bool
+    roles: list[str] = Field(default_factory=list)
 
 
 class AdminUpdateUserIn(BaseModel):
@@ -86,3 +88,4 @@ class AdminUpdateUserIn(BaseModel):
     displayName: str | None = None
     isAdmin: bool | None = None
     isActive: bool | None = None
+    roles: list[str] | None = None

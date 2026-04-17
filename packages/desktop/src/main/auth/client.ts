@@ -58,7 +58,7 @@ interface AdminClientConfig {
   accessControl: {
     enabled: boolean;
     adminUsers: string[];
-    bindings: Array<{ username: string; gatewayId: string; agentId: string }>;
+    bindings: Array<{ username: string; gatewayId: string; agentId: string; workspacePath?: string }>;
   };
   gateways: Array<{
     id: string;
@@ -85,6 +85,25 @@ interface AdminUser {
   displayName?: string;
   isAdmin: boolean;
   isActive: boolean;
+  roles?: string[];
+}
+
+export interface ObsFileEvent {
+  eventId: string;
+  taskId?: string;
+  sessionKey: string;
+  gatewayId: string;
+  fileName: string;
+  mimeType?: string;
+  byteSize: number;
+  objectKey: string;
+  url: string;
+  createdAt: string;
+}
+
+interface ObsFileEventListResult {
+  cursor: string;
+  items: ObsFileEvent[];
 }
 
 function normalizeBaseUrl(serviceUrl: string): string {
@@ -205,6 +224,7 @@ export async function loginWithPassword(
     displayName: result.user?.displayName,
     provider: result.provider ?? 'password',
     isAdmin: result.user?.isAdmin === true || (result.user?.roles ?? []).includes('admin'),
+    roles: result.user?.roles ?? [],
   };
 }
 
@@ -244,6 +264,7 @@ export async function pollSso(
       displayName: result.user?.displayName,
       provider: result.provider ?? auth.ssoProvider ?? 'sso',
       isAdmin: result.user?.isAdmin === true || (result.user?.roles ?? []).includes('admin'),
+      roles: result.user?.roles ?? [],
     },
   };
 }
@@ -293,7 +314,14 @@ export async function getAdminUsers(auth: AuthProviderConfig, token: string): Pr
 export async function createAdminUser(
   auth: AuthProviderConfig,
   token: string,
-  payload: { username: string; password: string; email?: string; displayName?: string; isAdmin?: boolean },
+  payload: {
+    username: string;
+    password: string;
+    email?: string;
+    displayName?: string;
+    isAdmin?: boolean;
+    roles?: string[];
+  },
 ): Promise<AdminUser> {
   const baseUrl = ensureServiceUrl(auth);
   return postJson<AdminUser>(`${baseUrl}/api/admin/users`, payload as Record<string, unknown>, token);
@@ -303,7 +331,14 @@ export async function updateAdminUser(
   auth: AuthProviderConfig,
   token: string,
   userId: string,
-  payload: { password?: string; email?: string; displayName?: string; isAdmin?: boolean; isActive?: boolean },
+  payload: {
+    password?: string;
+    email?: string;
+    displayName?: string;
+    isAdmin?: boolean;
+    isActive?: boolean;
+    roles?: string[];
+  },
 ): Promise<AdminUser> {
   const baseUrl = ensureServiceUrl(auth);
   return patchJson<AdminUser>(`${baseUrl}/api/admin/users/${encodeURIComponent(userId)}`, payload, token);
@@ -312,4 +347,16 @@ export async function updateAdminUser(
 export async function deleteAdminUser(auth: AuthProviderConfig, token: string, userId: string): Promise<void> {
   const baseUrl = ensureServiceUrl(auth);
   await deleteJson(`${baseUrl}/api/admin/users/${encodeURIComponent(userId)}`, token);
+}
+
+export async function getObsFileEvents(
+  auth: AuthProviderConfig,
+  token: string,
+  params: { cursor: string; limit?: number },
+): Promise<ObsFileEventListResult> {
+  const baseUrl = ensureServiceUrl(auth);
+  const qp = new URLSearchParams();
+  qp.set('cursor', params.cursor || '$');
+  if (params.limit && Number.isFinite(params.limit)) qp.set('limit', String(params.limit));
+  return getJson<ObsFileEventListResult>(`${baseUrl}/api/client/file-events?${qp.toString()}`, token);
 }

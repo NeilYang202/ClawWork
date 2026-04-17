@@ -54,6 +54,7 @@ class UserAgentBinding(Base):
     username: Mapped[str] = mapped_column(String(128), nullable=False)
     gateway_id: Mapped[str] = mapped_column(String(128), nullable=False)
     agent_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    workspace_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
 
@@ -86,4 +87,7 @@ class ObsUploadRecord(Base):
     object_key: Mapped[str] = mapped_column(Text, nullable=False)
     file_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     openclaw_path: Mapped[str] = mapped_column(Text, nullable=False)
+    content_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    source_kind: Mapped[str] = mapped_column(String(32), nullable=False, default='unknown')
+    source_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))

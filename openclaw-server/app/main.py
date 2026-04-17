@@ -8,6 +8,7 @@ from app.core.security import hash_password
 from app.db.base import Base
 from app.db.models import AppConfig, User
 from app.db.session import engine, SessionLocal
+from app.services.workspace_sync import start_workspace_sync_worker, stop_workspace_sync_worker
 
 app = FastAPI(title=settings.app_name)
 
@@ -60,3 +61,9 @@ async def startup() -> None:
                 if 'admin' not in (admin_user.roles or []):
                     admin_user.roles = [*(admin_user.roles or []), 'admin']
         await db.commit()
+    start_workspace_sync_worker()
+
+
+@app.on_event('shutdown')
+async def shutdown() -> None:
+    await stop_workspace_sync_worker()

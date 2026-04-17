@@ -12,13 +12,27 @@ services:
     volumes:
       - ./data/pgdata:/var/lib/postgresql
 
+  redis:
+    image: redis:8.6.2
+    container_name: redis_server
+    restart: always
+    env_file:
+      - .redisenv
+    command: ['sh', '-c', 'redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"']
+    volumes:
+      - ./data/redis:/data
+
   server:
     image: openclaw-server:v1.0.0
     container_name: openclaw_server
     restart: always
     depends_on:
       - db
+      - redis
     env_file:
       - .env
+      - .redisenv
     ports:
       - '8787:8787'
+    volumes:
+      - /appl/workspace:/appl/workspace

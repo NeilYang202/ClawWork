@@ -68,7 +68,8 @@
     "thinkingMedium": "中",
     "thinkingMinimal": "最低",
     "thinkingOff": "关闭",
-    "unsupportedUploadType": "{{fileName}} type is not supported"
+    "unsupportedUploadType": "{{fileName}} type is not supported",
+    "workspaceReady": "本地工作空间设置好了"
   },
   "chatMessage": {
     "conductor": "协调者",
@@ -316,7 +317,8 @@
     "searchFiles": "搜索文件…",
     "sortByDate": "按时间",
     "sortByName": "按名称",
-    "sortByType": "按类型"
+    "sortByType": "按类型",
+    "workspaceFiles": "本地工作空间"
   },
   "filePreview": {
     "cannotPreview": "无法预览此文件类型",
@@ -486,6 +488,7 @@
     "authMethod": "认证方式",
     "cannotDeleteMain": "主智能体不可删除",
     "checkForUpdates": "检查更新",
+    "commandPanelPermission": "命令面板",
     "confirmDeleteAgentDesc": "删除智能体「{{name}}」？使用该智能体的现有任务将保留会话，但无法再创建指向该智能体的新任务。",
     "confirmDeleteAgentTitle": "删除智能体",
     "confirmDeleteDesc": "移除「{{name}}」？与该网关的活跃连接将被终止。",
@@ -651,6 +654,7 @@
     "token": "Token",
     "tokenPlaceholder": "Gateway Token",
     "tokenRequired": "Token 不能为空",
+    "toolsPanelPermission": "工具面板",
     "trayDisabled": "菜单栏图标已关闭",
     "trayEnabled": "菜单栏图标已开启",
     "trayIcon": "菜单栏图标",

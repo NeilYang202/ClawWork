@@ -47,6 +47,7 @@ function buildApi(): ClawWorkAPI {
       email?: string;
       displayName?: string;
       isAdmin?: boolean;
+      roles?: string[];
     }) => ipcRenderer.invoke('auth:admin-users-create', payload),
     updateAdminUser: (payload: {
       userId: string;
@@ -55,6 +56,7 @@ function buildApi(): ClawWorkAPI {
       displayName?: string;
       isAdmin?: boolean;
       isActive?: boolean;
+      roles?: string[];
     }) => ipcRenderer.invoke('auth:admin-users-update', payload),
     deleteAdminUser: (userId: string) => ipcRenderer.invoke('auth:admin-users-delete', { userId }),
     listGateways: () => ipcRenderer.invoke('ws:list-gateways'),
